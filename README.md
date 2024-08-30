@@ -1,58 +1,26 @@
-<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
 <a id="readme-top"></a>
-<!--
-*** Thanks for checking out the Best-README-Template. If you have a suggestion
-*** that would make this better, please fork the repo and create a pull request
-*** or simply open an issue with the tag "enhancement".
-*** Don't forget to give the project a star!
-*** Thanks again! Now go create something AMAZING! :D
--->
-
-
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
-
 
 <!-- PROJECT LOGO -->
+
 <br />
 <div align="center">
-  <a href="https://github.com/github_username/repo_name">
+  <a href="https://github.com/Tropiscape/DIY-Auto-Fertilizer-Unit">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">project_title</h3>
+<h3 align="center">DIY Auto Fertilizer Unit</h3>
 
-  <p align="center">
-    project_description
+<p align="center">
+    An Arduino-based automated dosing system with a single pump and is designed to simplify the process of maintaining a healthy planted aquarium.
     <br />
-    <a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/github_username/repo_name">View Demo</a>
+    <a href="https://youtu.be/4LGvgf0YLbo">YouTube Video</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
-    ·
-    <a href="https://github.com/github_username/repo_name/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="https://github.com/Tropiscape/DIY-Auto-Fertilizer-Unit/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
   </p>
 </div>
 
-
-
 <!-- TABLE OF CONTENTS -->
+
 <details>
   <summary>Table of Contents</summary>
   <ol>
@@ -78,108 +46,149 @@
   </ol>
 </details>
 
-
-
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+<div align="center">
+  <a style="border-radius:50%" height="auto" width="auto" href="https://youtu.be/4LGvgf0YLbo">
+    <img src="http://img.youtube.com/vi/4LGvgf0YLbo/0.jpg" alt="YouTubeLink">
+  </a>
 
-Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-### Built With
-
-* [![Next][Next.js]][Next-url]
-* [![React][React.js]][React-url]
-* [![Vue][Vue.js]][Vue-url]
-* [![Angular][Angular.io]][Angular-url]
-* [![Svelte][Svelte.dev]][Svelte-url]
-* [![Laravel][Laravel.com]][Laravel-url]
-* [![Bootstrap][Bootstrap.com]][Bootstrap-url]
-* [![JQuery][JQuery.com]][JQuery-url]
+There were times when I completely forgot to fertilizer my planted aquarium. More so, if I were to go on vacation, I would need to find someone I trust to dose that tank. So, why not have a machine do it instead?! This project is very simplified as it only utilizes a single pump. 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 <!-- GETTING STARTED -->
-## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+## Getting Started
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-  ```sh
-  npm install npm@latest -g
-  ```
+- List of required hardware can be found [here](https://listium.com/@Tropiscape/113693/).
 
-### Installation
+- [Arduino IDE](https://www.arduino.cc/en/software) or any other IDE's that can upload to an Arduino.
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/github_username/repo_name.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
-5. Change git remote url to avoid accidental pushes to base project
-   ```sh
-   git remote set-url origin github_username/repo_name
-   git remote -v # confirm the changes
-   ```
+- ***RTClib***, ***Wire***, ***LiquidCrystal_I2C***, ***EEPROM***, ***avr/wdt***, and ***AceSorting*** Arduino Libraries.
+  
+  - In Arduino IDE: Tools → Manage Libraries → Search and Install required libraries.
+
+## Wiring
+
+<div align="center">
+  <a style="border-radius:50%" height="auto" width="auto" href="https://www.tinkercad.com/things/at2M5PfSesF-auto-fert">
+    <img src="images/Circuit.png" alt="Circuit">
+  </a>
+</div>
+
+<div align="center">
+  <a style="border-radius:50%" height="auto" width="auto" href="https://www.tinkercad.com/things/at2M5PfSesF-auto-fert">
+    <img src="images/Schematic.png" alt="Schematic">
+  </a>
+</div>
+
+***Note***: *TinkerCAD does not have a component for RTCs. I used a Clock Display instead as both components are identical when it comes to wiring.*
+
+Feel free to skip this part if you are familiar with wiring an Arduino. If you are new, please take the time to familiarize yourself with breadboards. A good tutorial can be found [here.](https://www.youtube.com/watch?v=W6mixXsn-Vc&t=14s&pp=ygUVaG93IGJyZWFkYm9hcmQgd29ya3Mg)
+
+#### RTC + LCD Wiring
+
+Wiring the RTC and LCD screen is very straight forward as long as you follow the Colour Legend. Both are virtually the same when it comes down to wiring.
+
+- ![FF0000](https://placehold.co/15x15/FF0000/FF0000.png) `Power (VCC)` → `5V` 
+
+- ![800080](https://placehold.co/15x15/800080/800080.png) `Ground (GND)` → `GND` 
+
+- ![008000](https://placehold.co/15x15/008000/008000.png) `Serial Clock Line (SCL)` → `A5` 
+
+- ![0000FF](https://placehold.co/15x15/0000FF/0000FF.png) `Serial Data Line (SDA)` → `A4`
+
+<i>Example:</i>
+
+<div align="center">
+  <a style="border-radius:50%" height="auto" width="auto" href="https://www.tinkercad.com/things/at2M5PfSesF-auto-fert">
+    <img src="images/RTC+LCD.png" alt="RTC + LCD Circuit">
+  </a>
+</div>
+
+#### Button Wiring
+
+*If you have a 4 pin button, you will need to use the pins that are diagonal from each other.*
+
+We will also need to use a 10kΩ Resistor for the button.
+
+![800080](https://placehold.co/15x15/800080/800080.png) `Ground (GND)` → `One end of the resistor` → `One pin on the button` → `GND`
+
+![FFA500](https://placehold.co/15x15/FFA500/FFA500.png) `Input/Output` → `Other end of the resistor` → `Digital Pin 2`
+
+<i>Example:</i>
+
+<div align="center">
+  <a style="border-radius:50%" height="auto" width="auto" href="https://www.tinkercad.com/things/at2M5PfSesF-auto-fert">
+    <img src="images/ButtonCircuit.png" alt="ButtonCircuit">
+  </a>
+</div>
+
+#### MOSFET + Pump Wiring
+
+<div>
+  <a style="border-radius:50%" height="auto" width="auto" href="https://oscarliang.com/how-to-use-mosfet-beginner-tutorial/">
+    <img src="https://oscarliang.com/wp-content/uploads/2013/10/mosfet.jpg" alt="Circuit">
+  </a>
+<i>
+   <a href="https://oscarliang.com/how-to-use-mosfet-beginner-tutorial/">Source for Image</a> 
+</i>
+</div>
+
+MOSFETs all have a Gate, Drain, and a Source pin. 
+
+- **Gate**: The control pin that determines whether the MOSFET is on or off. Voltage applied here allows current to flow between the Drain and Source.
+
+- **Drain**: The pin where the current enters the MOSFET when it is turned on.
+
+- **Source**: The pin where the current exits the MOSFET, usually connected to ground or a negative voltage in typical setups.
+
+However, we will need to add a Flyback Diode to protect the MOSFET from short-circuiting. *Please make sure that you have the correct orientation when installng the Flyback Diode.*
+
+![#808080](https://placehold.co/15x15/808080/808080.png) `Grey/Marked End` → ***Positive***
+
+![#000000](https://placehold.co/15x15/000000/000000.png) `Black/Non-Marked End` → ***Negative***
+
+<div>
+  <a style="border-radius:50%">
+    <img height="200px" width="200px" src="images/FlybackDiode.png" alt="Flyback Diode">
+  </a>
+</div>
+
+The wiring colour scheme is as follows:
+
+![800080](https://placehold.co/15x15/800080/800080.png) `Ground 1 (Source)` → `GND`
+
+![800080](https://placehold.co/15x15/800080/800080.png) `Ground 2 (From Pump)` → ![000000](https://placehold.co/15x15/000000/000000.png) `Black/Non-Marked End` → `Drain`
+
+![FFA500](https://placehold.co/15x15/FFA500/FFA500.png) `Input/Output` → `Digital Pin 2`
+
+![FF0000](https://placehold.co/15x15/FF0000/FF0000.png) `Power` → ![808080](https://placehold.co/15x15/808080/808080.png) `Grey/Marked End` → `Vin`
+
+<div align="center">
+  <a style="border-radius:50%" height="auto" width="auto" href="https://www.tinkercad.com/things/at2M5PfSesF-auto-fert">
+    <img src="images/PumpWiring.png" alt="PumpWiring">
+  </a>
+</div>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
-
-_For more examples, please refer to the [Documentation](https://example.com)_
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
-
-See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 <!-- CONTRIBUTING -->
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement". The same goes for any changes to the hardware and wiring.
 Don't forget to give the project a star! Thanks again!
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+   - Use the Hardware Branch for any hardware or wiring changes.
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
@@ -188,71 +197,28 @@ Don't forget to give the project a star! Thanks again!
 
 ### Top contributors:
 
-<a href="https://github.com/github_username/repo_name/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=github_username/repo_name" alt="contrib.rocks image" />
+<a href="https://github.com/Tropiscape/DIY-Auto-Fertilizer-Unit/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Tropiscape/DIY-Auto-Fertilizer-Unit" alt="contrib.rocks image" />
 </a>
 
-
-
 <!-- LICENSE -->
+
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the GNU GPLv3 License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 <!-- CONTACT -->
+
 ## Contact
 
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
+**YouTube:** [Tropiscape Aquatics](https://www.youtube.com/@tropiscapeaquatics) 
 
-Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
+**Email:** TropiscapeAquatics@gmail.com
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
-
-* []()
-* []()
-* []()
+**Discord Server:** [Invite](https://discord.com/invite/NuVphNdNfC)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 <!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/github_username/repo_name.svg?style=for-the-badge
-[contributors-url]: https://github.com/github_username/repo_name/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/github_username/repo_name.svg?style=for-the-badge
-[forks-url]: https://github.com/github_username/repo_name/network/members
-[stars-shield]: https://img.shields.io/github/stars/github_username/repo_name.svg?style=for-the-badge
-[stars-url]: https://github.com/github_username/repo_name/stargazers
-[issues-shield]: https://img.shields.io/github/issues/github_username/repo_name.svg?style=for-the-badge
-[issues-url]: https://github.com/github_username/repo_name/issues
-[license-shield]: https://img.shields.io/github/license/github_username/repo_name.svg?style=for-the-badge
-[license-url]: https://github.com/github_username/repo_name/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/linkedin_username
-[product-screenshot]: images/screenshot.png
-[Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
-[Next-url]: https://nextjs.org/
-[React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-[React-url]: https://reactjs.org/
-[Vue.js]: https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D
-[Vue-url]: https://vuejs.org/
-[Angular.io]: https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white
-[Angular-url]: https://angular.io/
-[Svelte.dev]: https://img.shields.io/badge/Svelte-4A4A55?style=for-the-badge&logo=svelte&logoColor=FF3E00
-[Svelte-url]: https://svelte.dev/
-[Laravel.com]: https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white
-[Laravel-url]: https://laravel.com
-[Bootstrap.com]: https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white
-[Bootstrap-url]: https://getbootstrap.com
-[JQuery.com]: https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white
-[JQuery-url]: https://jquery.com 
