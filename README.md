@@ -13,7 +13,7 @@
 <p align="center">
     An Arduino-based automated dosing system with a single pump and is designed to simplify the process of maintaining a healthy planted aquarium.
     <br />
-    <a href="https://youtu.be/4LGvgf0YLbo">YouTube Video</a>
+    <a href="https://youtu.be/4LGvgf0YLbo">Watch YouTube Video</a>
     ·
     <a href="https://github.com/Tropiscape/DIY-Auto-Fertilizer-Unit/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
   </p>
@@ -26,23 +26,17 @@
   <ol>
     <li>
       <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
     </li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="#wiring">Wiring</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
 
@@ -51,15 +45,17 @@
 
 <div align="center">
   <a style="border-radius:50%" height="auto" width="auto" href="https://youtu.be/4LGvgf0YLbo">
-    <img src="http://img.youtube.com/vi/4LGvgf0YLbo/0.jpg" alt="YouTubeLink">
+    <img src="http://img.youtube.com/vi/4LGvgf0YLbo/0.jpg" alt="YouTubeVideoLink">
   </a>
+</div>
 
 There were times when I completely forgot to fertilizer my planted aquarium. More so, if I were to go on vacation, I would need to find someone I trust to dose that tank. So, why not have a machine do it instead?! This project is very simplified as it only utilizes a single pump. 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- GETTING STARTED -->
 
+
+<!-- GETTING STARTED -->
 ## Getting Started
 
 ### Prerequisites
@@ -72,6 +68,7 @@ There were times when I completely forgot to fertilizer my planted aquarium. Mor
   
   - In Arduino IDE: Tools → Manage Libraries → Search and Install required libraries.
 
+<!-- Wiring -->
 ## Wiring
 
 <div align="center">
@@ -134,10 +131,12 @@ We will also need to use a 10kΩ Resistor for the button.
   <a style="border-radius:50%" height="auto" width="auto" href="https://oscarliang.com/how-to-use-mosfet-beginner-tutorial/">
     <img src="https://oscarliang.com/wp-content/uploads/2013/10/mosfet.jpg" alt="Circuit">
   </a>
+  <br />
 <i>
    <a href="https://oscarliang.com/how-to-use-mosfet-beginner-tutorial/">Source for Image</a> 
 </i>
 </div>
+<br />
 
 MOSFETs all have a Gate, Drain, and a Source pin. 
 
