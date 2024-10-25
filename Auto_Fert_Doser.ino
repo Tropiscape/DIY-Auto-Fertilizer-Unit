@@ -4,8 +4,6 @@
 #include <EEPROM.h>
 #include <AceSorting.h>
 
-// Initialize LCD and RTC
-LiquidCrystal_I2C lcd(39, 16, 2);  // Adjust I2C address to match yours
 RTC_DS1307 rtc;
 
 using ace_sorting::shellSortKnuth;
@@ -14,7 +12,7 @@ using ace_sorting::shellSortKnuth;
 #define E_INIT 0
 enum DayOfWeek : uint8_t {SUNDAY = 0, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY};
 
-const char* const months[12] PROGMEM = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+const char* const months[12] PROGMEM = {"Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"};
 const char* const daysOfWeek[] PROGMEM = {"Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"};
 
 // Struct for dose schedule
@@ -27,6 +25,7 @@ struct DoseTime {
 
 // -----------------------------------------------------------------------------------
 // CHANGE THESE TO CUSTOMIZE PUMP SETTINGS
+LiquidCrystal_I2C lcd(39, 16, 2);  // Adjust I2C address to match your LCD screen, if necessary.
 
 constexpr float doseDuration = 0.6; // Duration of the dose in seconds.
 constexpr uint8_t timeFormat = 0; // 0 for 12-hour; 1 for 24-hour
@@ -71,7 +70,7 @@ void setup() {
 
   // ----------------------------------------------------------
   //    Uncomment this function is you want a factory reset.
-  //    Comment this and reupload immediately.
+  //    Comment this function, make changes to schedule, and reupload.
   //      resetSchedule();
   // ----------------------------------------------------------
 
@@ -105,7 +104,7 @@ void setup() {
     Serial.println(F("Dose Schedule Saved"));
     EEPROM.write(E_INIT, 'T');  // Mark EEPROM as initialized
   }
-  updateNextDose();
+  initNextDose();
   updateDisplay();
 }
 
@@ -231,6 +230,7 @@ void handleButtonPress() {
   static int lastButtonState = HIGH;
   int reading = digitalRead(BUTTON_PIN);
 
+  // Button debound logic
   if (reading != lastButtonState) {
     lastDebounceTime = millis();
   }
@@ -335,7 +335,10 @@ void get12Time(char* timeStr) {
   snprintf_P(timeStr, 20, PSTR("%02d:%02d:%02d %s"), displayHour, now.minute(), now.second(), ampm);
 }
 
-void updateNextDose() {
+// Only used during initialization phase
+// Goes through the list and updates the next dose with respect to current IRL date.
+// This way, we don't
+void initNextDose() {
   DateTime now = rtc.now();
   uint8_t day = currentDoses;
   bool doseFound = false;
@@ -392,6 +395,44 @@ void updateNextDose() {
     // Possibly set nextDose to the first in the schedule.
     currentDoses = 0;
     nextDose = readDoseFromEEPROM(0);
+  }
+}
+
+// Obtain and update next dose
+void updateNextDose() {
+  uint8_t day;
+  DoseTime dose;
+
+  if (currentDoses == numDoses) {
+    currentDoses = 0;
+    day = currentDoses;
+  } else {
+    day = currentDoses + 1;
+  }
+
+  if (checkInitializeEEPROM(EEPROM.read(E_INIT))) {
+    dose = readDoseFromEEPROM(day);
+    nextDose = dose;
+
+    // Print the next dose details
+    Serial.print(F("Next Dose: "));
+    Serial.print((const char*)pgm_read_ptr(&(daysOfWeek[nextDose.dayOfWeek])));
+    Serial.print(F(" at "));
+
+    char timeStr[20];
+    if (timeFormat == 0) { // 12-Hour Format
+      const char* ampm = dose.hour < 12 ? "AM" : "PM";
+      snprintf_P(timeStr, 20, PSTR("%02d:%02d %s\n"), dose.hour, dose.minute, ampm);
+    } else if (timeFormat == 1) {  // 24-Hour Format
+      snprintf_P(timeStr, 20, PSTR("%02d:%02d\n"), dose.hour, dose.minute);
+    }
+    Serial.print(timeStr);
+    Serial.print("\n");
+  } else {
+    Serial.println(F("No valid dose found."));
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("No valid dose found.");
   }
 }
 
