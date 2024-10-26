@@ -64,6 +64,8 @@ unsigned long pumpStartTime = 0;
 unsigned long pumpStopTime = 0;
 uint8_t currentDoses = 0;
 DoseTime nextDose;
+// -----------------------------------------------------------------------------------
+
 
 void setup() {
   Serial.begin(9600);
@@ -108,6 +110,9 @@ void setup() {
   updateDisplay();
 }
 
+// -----------------------------------------------------------------------------------
+// Schedule Operations
+
 void resetSchedule() {
   // Use this if you want to do a factory reset.
   EEPROM.write(E_INIT, 'A');
@@ -115,7 +120,7 @@ void resetSchedule() {
   lcd.setCursor(0, 0);
   lcd.print("Please Reupload Firmware");
   lcd.setCursor(0, 1);
-  lcd.print("CO Reset Funct");
+  lcd.print("Remove Reset Funct");
 
   Serial.println(F("Please Reupload Firmware"));
   Serial.println(F("Please Comment Out Reset Function"));
@@ -178,6 +183,10 @@ void saveScheduleToEEPROM(DoseTime* schedule) {
     }
   }
 }
+
+// -----------------------------------------------------------------------------------
+// Dose Operations
+
 DoseTime readDoseFromEEPROM(uint8_t index) {
   uint8_t address = 1;  // Start reading from address 1
   EEPROM.get(address, numDoses);  // Read the number of doses
@@ -192,147 +201,6 @@ DoseTime readDoseFromEEPROM(uint8_t index) {
   DoseTime dose;
   EEPROM.get(address, dose);  // Read the specific DoseTime item
   return dose;
-}
-
-void updateDisplay() {
-  lcd.clear();
-  String date = getDate();
-  char timeStr[20];
-
-  if (timeFormat == 0) {
-    get12Time(timeStr);
-  } else if (timeFormat == 1) {
-    get24Time(timeStr);
-  }
-
-  lcd.setCursor(0, 0);
-  lcd.print(date);
-  lcd.setCursor(0, 1);
-  lcd.print(timeStr);
-}
-
-void handleScheduledDose() {
-  DateTime now = rtc.now();
-  if (!pumpActivated && now.dayOfTheWeek() == nextDose.dayOfWeek && now.hour() == nextDose.hour && now.minute() == nextDose.minute && now.second() == 0) {
-    runPump("Scheduled Dose!");
-
-    if (currentDoses == numDoses) {
-      currentDoses = 0;
-    } else {
-      currentDoses += 1;
-    }
-    updateNextDose();  // Update the next scheduled dose after running the current one
-  }
-}
-
-void handleButtonPress() {
-  static unsigned long lastDebounceTime = 0;
-  static int lastButtonState = HIGH;
-  int reading = digitalRead(BUTTON_PIN);
-
-  // Button debound logic
-  if (reading != lastButtonState) {
-    lastDebounceTime = millis();
-  }
-
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
-    if (reading != buttonState) {
-      buttonState = reading;
-      if (buttonState == LOW && !pumpActivated) {
-        runPump("Manual Release");
-      }
-    }
-  }
-
-  lastButtonState = reading;
-}
-
-void handlePumpOperation() {
-  if (pumpActivated) {
-    unsigned long currentMillis = millis();
-    if (currentMillis >= pumpStopTime) {
-      Serial.println(F("Pump duration reached, stopping pump"));
-      stopPump("Dose complete");
-    } else {
-      // Update LCD while pump is running
-      lcd.setCursor(0, 1);
-      lcd.print("Pump is running.");
-    }
-  }
-}
-
-
-void runPump(const char* reason) {
-  if (pumpActivated) {
-    Serial.println(F("Pump already active, ignoring activation request"));
-    return;
-  }
-
-  pumpActivated = true;
-  pumpStartTime = millis();
-  pumpStopTime = pumpStartTime + PUMP_DURATION;
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(reason);
-
-  digitalWrite(PUMP_PIN, HIGH);
-}
-
-void stopPump(const char* reason) {
-  if (!pumpActivated) {
-    Serial.println(F("Pump not active, ignoring stop request"));
-    return;
-  }
-
-  digitalWrite(PUMP_PIN, LOW);
-
-  unsigned long pumpRuntime = millis() - pumpStartTime;
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Pump stopped");
-  lcd.setCursor(0, 1);
-  lcd.print("Duration: ");
-  float runtimeDuration = pumpRuntime / 1000.0;
-  lcd.print(runtimeDuration);
-  lcd.print("sec");
-
-  pumpActivated = false;
-  delay(2000);  // Display the completion message for 2 seconds
-  updateDisplay();
-}
-
-
-String getDate() {
-  DateTime now = rtc.now();
-  const char* dayName = (const char*)pgm_read_ptr(&(daysOfWeek[now.dayOfTheWeek()]));
-  const char* monthName;
-
-  if (now.month() >= 1 && now.month() <= 12) {
-    monthName = (const char*)pgm_read_ptr(&(months[now.month() - 1]));
-  } else {
-    monthName = "Invalid month name";
-  }
-
-  char dateString[30];
-  snprintf_P(dateString, sizeof(dateString), PSTR("%s, %s %02d"),
-             dayName, monthName, now.day());
-  return String(dateString);
-}
-
-// Get the current time in 24-hour format
-void get24Time(char* timeStr) {
-  DateTime now = rtc.now();
-  snprintf_P(timeStr, 20, PSTR("%02d:%02d:%02d"), now.hour(), now.minute(), now.second());
-}
-
-// Get the current time in 12-hour format
-void get12Time(char* timeStr) {
-  DateTime now = rtc.now();
-  uint8_t displayHour = (now.hour() % 12) != 0 ? (now.hour() % 12) : 12;
-  const char* ampm = now.hour() < 12 ? "AM" : "PM";
-  snprintf_P(timeStr, 20, PSTR("%02d:%02d:%02d %s"), displayHour, now.minute(), now.second(), ampm);
 }
 
 // Only used during initialization phase
@@ -434,6 +302,155 @@ void updateNextDose() {
     lcd.setCursor(0, 0);
     lcd.print("No valid dose found.");
   }
+}
+
+void handleScheduledDose() {
+  DateTime now = rtc.now();
+  if (!pumpActivated && now.dayOfTheWeek() == nextDose.dayOfWeek && now.hour() == nextDose.hour && now.minute() == nextDose.minute && now.second() == 0) {
+    runPump("Scheduled Dose!");
+
+    if (currentDoses == numDoses) {
+      currentDoses = 0;
+    } else {
+      currentDoses += 1;
+    }
+    updateNextDose();  // Update the next scheduled dose after running the current one
+  }
+}
+
+// -----------------------------------------------------------------------------------
+// Pump Operations
+
+void handlePumpOperation() {
+  if (pumpActivated) {
+    unsigned long currentMillis = millis();
+    if (currentMillis >= pumpStopTime) {
+      Serial.println(F("Pump duration reached, stopping pump"));
+      stopPump("Dose complete");
+    } else {
+      // Update LCD while pump is running
+      lcd.setCursor(0, 1);
+      lcd.print("Pump is running.");
+    }
+  }
+}
+
+
+void runPump(const char* reason) {
+  if (pumpActivated) {
+    Serial.println(F("Pump already active, ignoring activation request"));
+    return;
+  }
+
+  pumpActivated = true;
+  pumpStartTime = millis();
+  pumpStopTime = pumpStartTime + PUMP_DURATION;
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(reason);
+
+  digitalWrite(PUMP_PIN, HIGH);
+}
+
+void stopPump(const char* reason) {
+  if (!pumpActivated) {
+    Serial.println(F("Pump not active, ignoring stop request"));
+    return;
+  }
+
+  digitalWrite(PUMP_PIN, LOW);
+
+  unsigned long pumpRuntime = millis() - pumpStartTime;
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Pump stopped");
+  lcd.setCursor(0, 1);
+  lcd.print("Duration: ");
+  float runtimeDuration = pumpRuntime / 1000.0;
+  lcd.print(runtimeDuration);
+  lcd.print("sec");
+
+  pumpActivated = false;
+  delay(2000);  // Display the completion message for 2 seconds
+  updateDisplay();
+}
+
+// -----------------------------------------------------------------------------------
+// DateTime + Display Operations
+
+void updateDisplay() {
+  lcd.clear();
+  String date = getDate();
+  char timeStr[20];
+
+  if (timeFormat == 0) {
+    get12Time(timeStr);
+  } else if (timeFormat == 1) {
+    get24Time(timeStr);
+  }
+
+  lcd.setCursor(0, 0);
+  lcd.print(date);
+  lcd.setCursor(0, 1);
+  lcd.print(timeStr);
+}
+
+String getDate() {
+  DateTime now = rtc.now();
+  const char* dayName = (const char*)pgm_read_ptr(&(daysOfWeek[now.dayOfTheWeek()]));
+  const char* monthName;
+
+  if (now.month() >= 1 && now.month() <= 12) {
+    monthName = (const char*)pgm_read_ptr(&(months[now.month() - 1]));
+  } else {
+    monthName = "Invalid month name";
+  }
+
+  char dateString[30];
+  snprintf_P(dateString, sizeof(dateString), PSTR("%s, %s %02d"),
+             dayName, monthName, now.day());
+  return String(dateString);
+}
+
+// Get the current time in 24-hour format
+void get24Time(char* timeStr) {
+  DateTime now = rtc.now();
+  snprintf_P(timeStr, 20, PSTR("%02d:%02d:%02d"), now.hour(), now.minute(), now.second());
+}
+
+// Get the current time in 12-hour format
+void get12Time(char* timeStr) {
+  DateTime now = rtc.now();
+  uint8_t displayHour = (now.hour() % 12) != 0 ? (now.hour() % 12) : 12;
+  const char* ampm = now.hour() < 12 ? "AM" : "PM";
+  snprintf_P(timeStr, 20, PSTR("%02d:%02d:%02d %s"), displayHour, now.minute(), now.second(), ampm);
+}
+
+// -----------------------------------------------------------------------------------
+// Button Operations
+
+void handleButtonPress() {
+  static unsigned long lastDebounceTime = 0;
+  static int lastButtonState = HIGH;
+  int reading = digitalRead(BUTTON_PIN);
+
+  // Button debound logic
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+    if (reading != buttonState) {
+      buttonState = reading;
+      if (buttonState == LOW && !pumpActivated) {
+        runPump("Manual Release");
+      }
+    }
+  }
+
+  lastButtonState = reading;
 }
 
 void loop() {
