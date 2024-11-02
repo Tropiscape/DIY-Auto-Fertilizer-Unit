@@ -108,8 +108,14 @@ void setup() {
     Serial.print(".");
   }
   Serial.print("\n");
+  Serial.println("IP Address:");
   Serial.println(WiFi.localIP());
+  WiFi.setOutputPower(15);
 
+  long rssi = WiFi.RSSI();
+  Serial.print("Signal Strength (RSSI): ");
+  Serial.println(rssi); // Higher negative values means weaker signal (Ex. -30 dBm is strong, -80 dBm is weak)
+  
   pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, LOW);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
