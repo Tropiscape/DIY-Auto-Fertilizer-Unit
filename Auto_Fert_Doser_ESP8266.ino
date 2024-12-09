@@ -36,8 +36,14 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org");
 const char* ssid     = "<WI-FI NETWORK NAME HERE>";
 const char* password = "<PASSWORD HERE>";
 
-constexpr float doseAmount = 1.0; // Duration of the dose in seconds.
+// Set offset time in seconds to adjust for your timezone, for example:
+// GMT +1 = 3600
+// GMT +8 = 28800
+// GMT -1 = -3600
+// GMT 0 = 0
+constexpr int timeOffset = 0;
 constexpr int timeFormat = 0; // 0 for 12-hour; 1 for 24-hour
+constexpr float doseAmount = 1.0; // Duration of the dose in Milliliters (ml).
 
 DoseTime doseSchedule[] = {
   // Format: {Day, Hour (24hr Format), Minute}
@@ -63,7 +69,7 @@ constexpr int BUTTON_PIN = 7;      // Pin connected to the manual dose button
 constexpr float PUMP_CALIBRATION = 1.04;  // Pump calibration factor (for 1 mL/sec)
 constexpr unsigned long DEBOUNCE_DELAY = 50;  // Delay for button debounce (in milliseconds)
 constexpr unsigned long DISPLAY_UPDATE_INTERVAL = 1000;  // Interval for updating the display (in milliseconds)
-constexpr int PUMP_DURATION = (1.0 / PUMP_CALIBRATION) * (doseAmount * 1000);
+constexpr int PUMP_DURATION = PUMP_CALIBRATION * (doseAmount * 1000); // The time (in milliseconds) for the pump to run.
 constexpr int MAX_PUMP_DURATION = PUMP_DURATION + 1; // Maximum pump runtime
 
 // Global variables
@@ -121,15 +127,10 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   timeClient.begin(); // Initialize a NTPClient to get time
-
-  // Set offset time in seconds to adjust for your timezone, for example:
-  // GMT +1 = 3600
-  // GMT +8 = 28800
-  // GMT -1 = -3600
-  // GMT 0 = 0
-  timeClient.setTimeOffset(-21600);
+  timeClient.setTimeOffset(timeOffset);
 
   sortSchedule(doseSchedule, numDoses);
+  findDuplicateDoses(doseSchedule, numDoses);
   printSchedule();
   initNextDose(doseSchedule, numDoses);
 
@@ -148,13 +149,15 @@ void setup() {
 //----------------------------------------------------------------------------------------------
 // Dose/Schedule Operations
 
+// Sorts the schedule by date (Sun = 0, Mon = 1, ..., Sat = 6).
 void sortSchedule(DoseTime* schedule, int size) {
-  // This function also removes duplicates.
-  // The main method is moving unique entries to the front of the array
-  // Any duplicate entries are at the back and can easily be indexed out.
   shellSortKnuth(schedule, size, compareDoseTime);
+}
 
-  // This section also removes any duplicates found.
+// This removes any duplicate doses found and pushes them back to the back.
+// The main method is moving unique entries to the front of the array
+// Any duplicate entries are at the back and can easily be indexed out.
+void findDuplicateDoses(DoseTime* schedule, int size) {
   // Track the number of unique doses.
   // Starts at 1 as the first entry will always be unique.
   int uniqueDose = 0;
@@ -177,7 +180,7 @@ void sortSchedule(DoseTime* schedule, int size) {
     }
   }
   // Modify the total number of doses to exclude duplicates.
-  numDoses = numDoses - (numDoses - uniqueDose);
+  numDoses = uniqueDose + 1;
 }
 
 bool compareDoseTime(const DoseTime &a, const DoseTime &b) {
@@ -210,6 +213,7 @@ void printSchedule() {
   }
 }
 
+// Obtain initial dose with respect to the current day. This is only ran once during setup.
 DoseTime initNextDose(DoseTime* schedule, int size) {
   DoseTime dose;
 
@@ -327,13 +331,11 @@ void loadCurrentDoseIndex() {
 
 // Get the current time in 24-hour format
 void get24Time(char* timeStr) {
-  timeClient.update();
   snprintf_P(timeStr, 20, PSTR("%02d:%02d:%02d"), timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
 }
 
 // Get the current time in 12-hour format
 void get12Time(char* timeStr) {
-  timeClient.update();
   int currentHour = timeClient.getHours();
   int displayHour = (currentHour % 12) != 0 ? (currentHour % 12) : 12;
   const char* ampm = currentHour < 12 ? "AM" : "PM";
@@ -341,8 +343,6 @@ void get12Time(char* timeStr) {
 }
 
 String getDate() {
-  timeClient.update();
-
   // Time structure
   time_t epochTime = timeClient.getEpochTime();
   struct tm* ptm = gmtime ((time_t *)&epochTime);
@@ -473,11 +473,16 @@ void updateDisplay() {
 //----------------------------------------------------------------------------------------------
 
 void loop() {
+  // Update NTP every 10 minutes
+  if (((millis() - lastNTPUpdate) > 600000) && (WiFi.status() == WL_CONNECTED)) {
+    timeClient.update();
+    lastNTPUpdate = millis();
+  }
   handleButtonPress();
   handleScheduledDose();
   handlePumpOperation();
 
-  // Update display at set intervals when pump is not active
+  // Display update
   if ((millis() - lastDisplayUpdate) >= DISPLAY_UPDATE_INTERVAL && !pumpActivated) {
     updateDisplay();
     lastDisplayUpdate = millis();
