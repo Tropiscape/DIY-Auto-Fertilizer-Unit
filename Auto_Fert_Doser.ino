@@ -51,7 +51,7 @@ constexpr uint8_t BUTTON_PIN = 2;  // Pin connected to the manual dose button
 constexpr unsigned long DEBOUNCE_DELAY = 50;  // Delay for button debounce (in milliseconds)
 constexpr unsigned long DISPLAY_UPDATE_INTERVAL = 1000;  // Interval for updating the display (in milliseconds)
 constexpr float PUMP_CALIBRATION = 1.04;  // Pump calibration factor (for 1 mL/sec)
-constexpr int PUMP_DURATION = static_cast<int>(PUMP_CALIBRATION * (doseAmount * 1000));
+constexpr int PUMP_DURATION = (((PUMP_CALIBRATION - 1.0) * -1.0) + 0.9) * (doseAmount * 1000); // The time (in milliseconds) for the pump to run.
 constexpr int MAX_PUMP_DURATION = PUMP_DURATION + 1; // Maximum pump runtime to prevent any hangups
 const uint8_t numDoses = sizeof(doseSchedule) / sizeof(doseSchedule[0]);  // Number of doses in the schedule
 
