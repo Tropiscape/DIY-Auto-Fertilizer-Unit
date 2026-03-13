@@ -69,7 +69,7 @@ constexpr int BUTTON_PIN = 7;      // Pin connected to the manual dose button
 constexpr float PUMP_CALIBRATION = 1.04;  // Pump calibration factor (for 1 mL/sec)
 constexpr unsigned long DEBOUNCE_DELAY = 50;  // Delay for button debounce (in milliseconds)
 constexpr unsigned long DISPLAY_UPDATE_INTERVAL = 1000;  // Interval for updating the display (in milliseconds)
-constexpr int PUMP_DURATION = PUMP_CALIBRATION * (doseAmount * 1000); // The time (in milliseconds) for the pump to run.
+constexpr int PUMP_DURATION = (((PUMP_CALIBRATION - 1.0) * -1.0) + 0.9) * (doseAmount * 1000); // The time (in milliseconds) for the pump to run.
 constexpr int MAX_PUMP_DURATION = PUMP_DURATION + 1; // Maximum pump runtime
 
 // Global variables
