@@ -42,8 +42,8 @@ DoseTime doseSchedule[] = {
   {FRIDAY, 9, 0},
   {SATURDAY, 12, 0},
 };
-// -----------------------------------------------------------------------------------
 
+// -----------------------------------------------------------------------------------
 
 // Constants
 constexpr uint8_t PUMP_PIN = 9;  // Pin connected to the pump
@@ -70,11 +70,11 @@ DoseTime nextDose;
 void setup() {
   Serial.begin(9600);
 
-  // ----------------------------------------------------------
+  // -----------------------------------------------------------------------------------
   //    Uncomment this function is you want a factory reset.
-  //    Comment this function, make changes to schedule, and reupload.
-  //      resetSchedule();
-  // ----------------------------------------------------------
+  //    Comment out this function, make changes to schedule, and reupload.
+  //    resetSchedule();
+  // -----------------------------------------------------------------------------------
 
   lcd.init();
   lcd.backlight();
@@ -86,6 +86,7 @@ void setup() {
     lcd.print("RTC not found!");
     while (1);
   }
+
   if (!rtc.isrunning()) {
     Serial.println(F("RTC not running!"));
     lcd.clear();
@@ -104,8 +105,10 @@ void setup() {
     Serial.println(F("Dose Schedule Sorted"));
     saveScheduleToEEPROM(doseSchedule);
     Serial.println(F("Dose Schedule Saved"));
+    printSchedule();
     EEPROM.write(E_INIT, 'T');  // Mark EEPROM as initialized
   }
+
   initNextDose();
   updateDisplay();
 }
@@ -134,21 +137,74 @@ bool checkInitializeEEPROM(char initFlag) {
   return (initFlag == 'T');
 }
 
-bool compareDoseTime(const DoseTime &a, const DoseTime &b) {
-  // Compare the day of the week first
-  if (a.dayOfWeek != b.dayOfWeek)
-    return a.dayOfWeek < b.dayOfWeek;
+bool isDateValid(DoseTime* doseTime){
+  // Prevent any out of bounds hours
+  if ((doseTime -> hour < 0) || (doseTime -> hour > 23)) {
+    return false;
+  }
 
-  // If dayOfWeek is the same, compare the hour
-  if (a.hour != b.hour)
-    return a.hour < b.hour;
+  // Prevent any out of bounds minutes
+  if ((doseTime -> minute < 0) || (doseTime -> minute > 59)) {
+    return false;
+  }
 
-  // If both dayOfWeek and hour are the same, compare the minute
-  return a.minute < b.minute;
+  return true;
 }
 
-void sortSchedule(DoseTime* array, int size) {
-  shellSortKnuth(array, size, compareDoseTime);
+void sortSchedule(DoseTime* schedule, int size) {
+
+  // Remove invalid entries first
+  int validCount = 0;
+  for (int i = 0; i < size; i++) {
+    DoseTime* doseDate = &schedule[i];
+
+    if (isDateValid(doseDate)) {
+      schedule[validCount] = schedule[i];
+      validCount++;
+    } else {
+      Serial.print(F("Invalid dose entry dropped at index "));
+      Serial.println(i);
+      Serial.println(F("Entry: "));
+      printDose(*doseDate);
+    }
+  }
+  numDoses = validCount;
+
+  // This function also removes duplicates.
+  // The main method is moving unique entries to the front of the array
+  // Any duplicate entries are at the back and can easily be indexed out.
+  shellSortKnuth(schedule, size, compareDoseTime);
+
+  // This section also removes any duplicates found.
+  // Track the number of unique doses.
+  // Starts at 1 as the first entry will always be unique.
+  int uniqueDose = 0;
+
+  for (int i = 1; i < numDoses; i++) {
+    // If the current element is not a duplicate of the previous element
+    if (compareDoseTime(schedule[uniqueDose], schedule[i]) || compareDoseTime(schedule[i], schedule[uniqueDose])) {
+      uniqueDose++;
+      schedule[uniqueDose] = schedule[i]; // Move unique dose to the front of the schedule.
+    }
+  }
+  // Modify the total number of doses to exclude duplicates.
+  // + 1 as the first entry is always unique.
+  numDoses = uniqueDose + 1;
+}
+
+bool compareDoseTime(const DoseTime &date1, const DoseTime &date2) {
+  // Compare the day of the week first
+  if (date1.weekday != date2.weekday) {
+    return date1.weekday < date2.weekday;
+  }
+
+  // If weekday is the same, compare the hour
+  if (date1.hour != date2.hour) {
+    return date1.hour < date2.hour;
+  }
+
+  // If both weekday and hour are the same, compare the minute
+  return date1.minute < date2.minute;
 }
 
 void saveScheduleToEEPROM(DoseTime* schedule) {
@@ -182,6 +238,47 @@ void saveScheduleToEEPROM(DoseTime* schedule) {
       address += sizeof(DoseTime);
     }
   }
+}
+
+void printSchedule() {
+  Serial.print("\n");
+  Serial.println(F("================================================="));
+  Serial.println(F("                    SCHEDULE                     "));
+  Serial.println(F("================================================="));
+  Serial.print(F("Total Doses: "));
+  Serial.println(numDoses);
+  Serial.println(F("-------------------------------------------------"));
+
+  for (uint8_t i = 0; i < numDoses; i++) {
+    int hour = doseSchedule[i].hour;
+    int minute = doseSchedule[i].minute;
+
+    Serial.print(F("Dose "));
+    Serial.print(i + 1);
+    Serial.print(F(" of "));
+    Serial.print(numDoses);
+    Serial.print(F(" | "));
+    Serial.print((const char*)pgm_read_ptr(&(weekdayNames[doseSchedule[i].weekday])));
+    Serial.print(F(" @ "));
+
+    if (timeFormat == 0) {
+      int displayHour = (hour % 12) != 0 ? (hour % 12) : 12;
+      const char* ampm = hour < 12 ? "AM" : "PM";
+      Serial.print(displayHour);
+      Serial.print(F(":"));
+      if (minute < 10) Serial.print(F("0"));
+      Serial.print(minute);
+      Serial.print(F(" "));
+      Serial.println(ampm);
+    } else {
+      Serial.print(hour);
+      Serial.print(F(":"));
+      if (minute < 10) Serial.print(F("0"));
+      Serial.println(minute);
+    }
+  }
+
+  Serial.println(F("=================================================\n"));
 }
 
 // -----------------------------------------------------------------------------------

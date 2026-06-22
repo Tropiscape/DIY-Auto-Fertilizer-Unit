@@ -69,6 +69,7 @@ constexpr int BUTTON_PIN = D7;      // Pin connected to the manual dose button
 constexpr float PUMP_CALIBRATION = 1.04;  // Pump calibration factor (for 1 mL/sec)
 constexpr unsigned long DEBOUNCE_DELAY = 50;  // Delay for button debounce (in milliseconds)
 constexpr unsigned long DISPLAY_UPDATE_INTERVAL = 1000;  // Interval for updating the display (in milliseconds)
+constexpr unsigned long NTP_UPDATE_INTERVAL = 3600000; // NTP Update Interval (in milliseconds)
 constexpr int PUMP_DURATION = (((PUMP_CALIBRATION - 1.0) * -1.0) + 0.9) * (doseAmount * 1000); // The time (in milliseconds) for the pump to run.
 constexpr int MAX_PUMP_DURATION = PUMP_DURATION + 1; // Maximum pump runtime failsafe to prevent pump from injecting too much.
 
@@ -114,6 +115,7 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
+
   Serial.print("\n");
   Serial.println("IP Address:");
   Serial.println(WiFi.localIP());
@@ -150,30 +152,50 @@ void setup() {
 //----------------------------------------------------------------------------------------------
 // Dose/Schedule Operations
 
-// Sorts the schedule by date (Sun = 0, Mon = 1, ..., Sat = 6).
-void sortSchedule(DoseTime* schedule, int size) {
-  shellSortKnuth(schedule, size, compareDoseTime);
+bool isDateValid(DoseTime* doseTime){
+  // Prevent any out of bounds hours
+  if ((doseTime -> hour < 0) || (doseTime -> hour > 23)) {
+    return false;
+  }
+
+  // Prevent any out of bounds minutes
+  if ((doseTime -> minute < 0) || (doseTime -> minute > 59)) {
+    return false;
+  }
+
+  return true;
 }
 
-// This removes any duplicate doses found and pushes them back to the back.
-// The main method is moving unique entries to the front of the array
-// Any duplicate entries are at the back and can easily be indexed out.
-void findDuplicateDoses(DoseTime* schedule, int size) {
+void sortSchedule(DoseTime* schedule, int size) {
+
+  // Remove invalid entries first
+  int validCount = 0;
+  for (int i = 0; i < size; i++) {
+    DoseTime* doseDate = &schedule[i];
+
+    if (isDateValid(doseDate)) {
+      schedule[validCount] = schedule[i];
+      validCount++;
+    } else {
+      Serial.print(F("Invalid dose entry dropped at index "));
+      Serial.println(i);
+      Serial.println(F("Entry: "));
+      printDose(*doseDate);
+    }
+  }
+  numDoses = validCount;
+
+  // This function also removes duplicates.
+  // The main method is moving unique entries to the front of the array
+  // Any duplicate entries are at the back and can easily be indexed out.
+  shellSortKnuth(schedule, size, compareDoseTime);
+
+  // This section also removes any duplicates found.
   // Track the number of unique doses.
   // Starts at 1 as the first entry will always be unique.
   int uniqueDose = 0;
 
-  for (int i = 1; i < size; i++) {
-    // Prevent any out of bounds hours
-    if ((schedule[i].hour < 0) || (schedule[i].hour > 23)) {
-      schedule[i].hour = 0;
-    }
-
-    // Prevent any out of bounds minutes
-    if ((schedule[i].minute < 0) || (schedule[i].minute > 59)) {
-      schedule[i].minute = 0;
-    }
-
+  for (int i = 1; i < numDoses; i++) {
     // If the current element is not a duplicate of the previous element
     if (compareDoseTime(schedule[uniqueDose], schedule[i]) || compareDoseTime(schedule[i], schedule[uniqueDose])) {
       uniqueDose++;
@@ -181,37 +203,64 @@ void findDuplicateDoses(DoseTime* schedule, int size) {
     }
   }
   // Modify the total number of doses to exclude duplicates.
+  // + 1 as the first entry is always unique.
   numDoses = uniqueDose + 1;
 }
 
-bool compareDoseTime(const DoseTime &a, const DoseTime &b) {
+bool compareDoseTime(const DoseTime &date1, const DoseTime &date2) {
   // Compare the day of the week first
-  if (a.weekday != b.weekday) {
-    return a.weekday < b.weekday;
+  if (date1.weekday != date2.weekday) {
+    return date1.weekday < date2.weekday;
   }
 
   // If weekday is the same, compare the hour
-  if (a.hour != b.hour) {
-    return a.hour < b.hour;
+  if (date1.hour != date2.hour) {
+    return date1.hour < date2.hour;
   }
 
   // If both weekday and hour are the same, compare the minute
-  return a.minute < b.minute;
+  return date1.minute < date2.minute;
 }
 
 void printSchedule() {
-  Serial.println(F("Schedule:"));
+  Serial.print("\n");
+  Serial.println(F("================================================="));
+  Serial.println(F("                    SCHEDULE                     "));
+  Serial.println(F("================================================="));
+  Serial.print(F("Total Doses: "));
+  Serial.println(numDoses);
+  Serial.println(F("-------------------------------------------------"));
+
   for (uint8_t i = 0; i < numDoses; i++) {
+    int hour = doseSchedule[i].hour;
+    int minute = doseSchedule[i].minute;
+
     Serial.print(F("Dose "));
-    Serial.print(i);
-    Serial.print(F(": Day "));
+    Serial.print(i + 1);
+    Serial.print(F(" of "));
+    Serial.print(numDoses);
+    Serial.print(F(" | "));
     Serial.print((const char*)pgm_read_ptr(&(weekdayNames[doseSchedule[i].weekday])));
-    Serial.print(F(", Hour "));
-    Serial.print(doseSchedule[i].hour);
-    Serial.print(F(", Minute "));
-    Serial.println(doseSchedule[i].minute);
-    Serial.print("\n");
+    Serial.print(F(" @ "));
+
+    if (timeFormat == 0) {
+      int displayHour = (hour % 12) != 0 ? (hour % 12) : 12;
+      const char* ampm = hour < 12 ? "AM" : "PM";
+      Serial.print(displayHour);
+      Serial.print(F(":"));
+      if (minute < 10) Serial.print(F("0"));
+      Serial.print(minute);
+      Serial.print(F(" "));
+      Serial.println(ampm);
+    } else {
+      Serial.print(hour);
+      Serial.print(F(":"));
+      if (minute < 10) Serial.print(F("0"));
+      Serial.println(minute);
+    }
   }
+
+  Serial.println(F("=================================================\n"));
 }
 
 // Obtain initial dose with respect to the current day. This is only ran once during setup.
@@ -314,7 +363,18 @@ void storeCurrentDoseIndex(int index) {
 }
 
 void loadCurrentDoseIndex() {
+  // Avoid empty schedules
+  if (numDoses == 0) {
+    return;
+  }
+
   File file = LittleFS.open("/currentDoseIndex.json", "r");
+
+  // Default to the very first dose as a safe catch
+  if (!file) {
+    currentDoseIndex = 0;
+    return;
+  }
 
   deserializeJson(doc, file);
 
@@ -322,7 +382,7 @@ void loadCurrentDoseIndex() {
 
   Serial.println(F("Loaded Current Dose Index:"));
   Serial.println(currentDoseIndex);
-  Serial.print(F("-------------------------------------------------\n"));
+  Serial.println(F("=================================================\n"));
   file.close();
 }
 
@@ -474,8 +534,9 @@ void updateDisplay() {
 //----------------------------------------------------------------------------------------------
 
 void loop() {
-  // Update NTP every 10 minutes
-  if (((millis() - lastNTPUpdate) > 600000) && (WiFi.status() == WL_CONNECTED)) {
+
+  // Update NTP every 1-hour
+  if (((millis() - lastNTPUpdate) > NTP_UPDATE_INTERVAL) && (WiFi.status() == WL_CONNECTED)) {
     timeClient.update();
     lastNTPUpdate = millis();
   }
