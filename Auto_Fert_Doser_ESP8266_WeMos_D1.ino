@@ -8,8 +8,11 @@
 #include <FS.h>
 #include <ArduinoJson.h>
 
+#define D6 12
+#define D7 13
+
 // Initialize LCD and RTC
-LiquidCrystal_I2C lcd(39, 16, 2);  // Adjust I2C address to match yours
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Adjust I2C address to match yours
 
 using ace_sorting::shellSortKnuth;
 JsonDocument doc;
@@ -19,7 +22,6 @@ const char* const weekdayNames[7] PROGMEM = {"Sun", "Mon", "Tues", "Wed", "Thurs
 
 enum Weekday : int {SUNDAY = 0, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY};
 
-// Struct for dose schedule
 struct DoseTime {
   int weekday;
   int hour;
@@ -61,11 +63,9 @@ DoseTime doseSchedule[] = {
 };
 // -----------------------------------------------------------------------------------
 
-
-
 // Constants
-constexpr int PUMP_PIN = D6;        // Pin connected to the pump
-constexpr int BUTTON_PIN = D7;      // Pin connected to the manual dose button
+constexpr int PUMP_PIN = D6;        // Pin connected to the pump (WeMos D1 mini D6)
+constexpr int BUTTON_PIN = D7;      // Pin connected to the manual dose button (WeMos D1 mini D7)
 constexpr float PUMP_CALIBRATION = 1.04;  // Pump calibration factor (for 1 mL/sec)
 constexpr unsigned long DEBOUNCE_DELAY = 50;  // Delay for button debounce (in milliseconds)
 constexpr unsigned long DISPLAY_UPDATE_INTERVAL = 1000;  // Interval for updating the display (in milliseconds)
@@ -85,6 +85,8 @@ unsigned long pumpStopTime = 0;
 int numDoses = sizeof(doseSchedule) / sizeof(doseSchedule[0]);  // The number of doses based on the schedule.
 int currentDoseIndex = 0;
 DoseTime nextDose;
+
+// -----------------------------------------------------------------------------------
 
 void setup() {
   Serial.begin(115200);
@@ -133,7 +135,6 @@ void setup() {
   timeClient.setTimeOffset(timeOffset);
 
   sortSchedule(doseSchedule, numDoses);
-  findDuplicateDoses(doseSchedule, numDoses);
   printSchedule();
   initNextDose(doseSchedule, numDoses);
 
@@ -392,7 +393,7 @@ void loadCurrentDoseIndex() {
 
 // Get the current time in 24-hour format
 void get24Time(char* timeStr) {
-  snprintf_P(timeStr, 20, PSTR("%02d:%02d:%02d"), timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
+  snprintf(timeStr, 20, PSTR("%02d:%02d:%02d"), timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
 }
 
 // Get the current time in 12-hour format
@@ -400,7 +401,7 @@ void get12Time(char* timeStr) {
   int currentHour = timeClient.getHours();
   int displayHour = (currentHour % 12) != 0 ? (currentHour % 12) : 12;
   const char* ampm = currentHour < 12 ? "AM" : "PM";
-  snprintf_P(timeStr, 20, PSTR("%02d:%02d:%02d %s"), displayHour, timeClient.getMinutes(), timeClient.getSeconds(), ampm);
+  snprintf(timeStr, 20, PSTR("%02d:%02d:%02d %s"), displayHour, timeClient.getMinutes(), timeClient.getSeconds(), ampm);
 }
 
 String getDate() {
@@ -419,8 +420,8 @@ String getDate() {
   }
 
   char dateString[30];
-  snprintf_P(dateString, sizeof(dateString), PSTR("%s, %s. %02d"),
-             dayName, monthName, currentDay);
+  snprintf(dateString, sizeof(dateString), PSTR("%s, %s. %02d"),
+            dayName, monthName, currentDay);
   return String(dateString);
 }
 
