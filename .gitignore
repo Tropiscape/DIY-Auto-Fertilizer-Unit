@@ -1,2 +1,5 @@
 images/.directory
 .vscode/*
+Auto_Fert_Doser/.vscode/c_cpp_properties.json
+Auto_Fert_Doser_ESP8266/.vscode/c_cpp_properties.json
+Auto_Fert_Doser_ESP8266_WeMos_D1/.vscode/c_cpp_properties.json
