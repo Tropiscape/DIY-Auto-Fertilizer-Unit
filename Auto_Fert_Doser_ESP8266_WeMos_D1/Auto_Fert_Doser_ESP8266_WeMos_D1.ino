@@ -1,6 +1,4 @@
 #include <ESP8266WiFi.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <AceSorting.h>
@@ -11,10 +9,10 @@
 #define D6 12
 #define D7 13
 
+using ace_sorting::shellSortKnuth;
+
 // Initialize LCD and RTC
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // Adjust I2C address to match yours
-
-using ace_sorting::shellSortKnuth;
 JsonDocument doc;
 
 const char* const months[12] PROGMEM = { "Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec" };
@@ -34,9 +32,6 @@ struct DoseTime {
   int minute;
 };
 
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org");
-
 // -----------------------------------------------------------------------------------
 // CHANGE THESE TO CUSTOMIZE SETTINGS
 
@@ -44,20 +39,14 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org");
 const char* ssid = "<WI-FI NETWORK NAME HERE>";
 const char* password = "<PASSWORD HERE>";
 
-// Set offset time in seconds to adjust for your timezone, for example:
-// GMT +1 = 3600
-// GMT +8 = 28800
-// GMT -1 = -3600
-// GMT 0 = 0
-constexpr int timeOffset = 0;
-
 // Timezones can be found here:
 // https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char* timezone = "<+06>-6";  // GMT -6
-constexpr int timeFormat = 0;      // 0 for 12-hour; 1 for 24-hour
-constexpr float doseAmount = 1.0;  // Duration of the dose in Milliliters (ml).
+const char* timezone = "<+06>+6";           // GMT +6
+const char* ntpServer = "pool.ntp.org";     // Server to sync time with
+constexpr int timeFormat = 0;               // 0 for 12-hour; 1 for 24-hour
+constexpr float doseAmount = 1.0;           // Duration of the dose in Milliliters (ml).
 constexpr unsigned long DOSE_WINDOW = 300;  // How late a dose can fire. (in Seconds) Ex. 300 = 5 min
-constexpr float PUMP_CALIBRATION = 1.04;  // Pump calibration factor (for 1 mL/sec)
+constexpr float PUMP_CALIBRATION = 1.04;    // Pump calibration factor (for 1 mL/sec)
 
 DoseTime doseSchedule[] = {
   // Format: {Day, Hour (24hr Format), Minute}
@@ -76,12 +65,11 @@ DoseTime doseSchedule[] = {
 // -----------------------------------------------------------------------------------
 
 // Constants
-constexpr int PUMP_PIN = D6;                             // Pin connected to the pump (WeMos D1 mini D6)
-constexpr int BUTTON_PIN = D7;                           // Pin connected to the manual dose button (WeMos D1 mini D7)
+constexpr int PUMP_PIN = D6;    // Pin connected to the pump (WeMos D1 mini D6)
+constexpr int BUTTON_PIN = D7;  // Pin connected to the manual dose button (WeMos D1 mini D7)
 
 constexpr unsigned long DEBOUNCE_DELAY = 50;             // Delay for button debounce (in milliseconds)
 constexpr unsigned long DISPLAY_UPDATE_INTERVAL = 1000;  // Interval for updating the display (in milliseconds)
-// constexpr unsigned long NTP_UPDATE_INTERVAL = 3600000;                                          // NTP Update Interval (in milliseconds)
 constexpr int PUMP_DURATION = (((PUMP_CALIBRATION - 1.0) * -1.0) + 0.9) * (doseAmount * 1000);  // The time (in milliseconds) for the pump to run.
 constexpr int MAX_PUMP_DURATION = PUMP_DURATION + 1;                                            // Maximum pump runtime failsafe to prevent pump from injecting too much.
 
@@ -89,7 +77,7 @@ constexpr unsigned long SECONDS_PER_MINUTE = 60;
 constexpr unsigned long SECONDS_PER_HOUR = 3600;
 constexpr unsigned long SECONDS_PER_DAY = 86400;
 constexpr unsigned long SECONDS_PER_WEEK = 604800;
-constexpr time_t MIN_VALID_EPOCH = 946684800; // Jan 1, 2000 UTC => for NTP syncs in setup
+constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syncs in setup
 
 // Global variables
 unsigned long lastDebounceTime = 0;
@@ -107,26 +95,36 @@ DoseTime nextDose;
 // -----------------------------------------------------------------------------------
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(115200);  // For Serial Monitor
+
+  initLCD();
+  initFS();
+  initWiFi();
+  initPumpPins();
+  initTime();
+  initDoseSchedule();
+}
+
+void initLCD() {
   lcd.init();
   lcd.backlight();
 
+  Serial.println(F("Starting setup..."));
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Starting");
   lcd.setCursor(0, 1);
   lcd.print("Setup...");
+}
 
-  Serial.println(F("Starting setup..."));
-  delay(1000);
-
-  // Initialize LittleFS
+void initFS() {
   if (!LittleFS.begin()) {
     Serial.println("Failed to mount LittleFS");
     return;
   }
+}
 
-  // Connect to Wi-Fi
+void initWiFi() {
   Serial.println("Connecting to ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
@@ -148,13 +146,16 @@ void setup() {
   long rssi = WiFi.RSSI();
   Serial.print("Signal Strength (RSSI): ");
   Serial.println(rssi);  // Higher negative values means weaker signal (Ex. -30 dBm is strong, -80 dBm is weak)
+}
 
+void initPumpPins() {
   pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, LOW);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+}
 
-  // ----------- Time Initialization -----------
-  configTzTime(timezone, "pool.ntp.org");
+void initTime() {
+  configTzTime(timezone, ntpServer);
 
   // Wait until time is retrieved for the first time.
   time_t now = time(nullptr);
@@ -162,10 +163,9 @@ void setup() {
     delay(100);
     now = time(nullptr);
   }
+}
 
-  // timeClient.begin(); // Initialize a NTPClient to get time
-  // timeClient.setTimeOffset(timeOffset);
-
+void initDoseSchedule() {
   sortSchedule(doseSchedule, numDoses);
   printSchedule();
   initNextDose(doseSchedule, numDoses);
@@ -177,8 +177,6 @@ void setup() {
 
   loadNextDoseFromFile();
 }
-
-
 
 //----------------------------------------------------------------------------------------------
 // Dose/Schedule Operations
@@ -204,14 +202,14 @@ tm* getLocalTime() {
 
 long timeToSeconds(tm* timeinfo) {
   return timeinfo->tm_wday * SECONDS_PER_DAY
-    + timeinfo->tm_hour * SECONDS_PER_HOUR
-    + timeinfo->tm_min * SECONDS_PER_MINUTE;
+         + timeinfo->tm_hour * SECONDS_PER_HOUR
+         + timeinfo->tm_min * SECONDS_PER_MINUTE;
 }
 
-long doseTimeToSeconds(DoseTime doseTime){
+long doseTimeToSeconds(DoseTime doseTime) {
   return doseTime.weekday * SECONDS_PER_DAY
-    + doseTime.hour * SECONDS_PER_HOUR
-    + doseTime.minute * SECONDS_PER_MINUTE;
+         + doseTime.hour * SECONDS_PER_HOUR
+         + doseTime.minute * SECONDS_PER_MINUTE;
 }
 
 void sortSchedule(DoseTime* schedule, int size) {
@@ -245,9 +243,10 @@ void sortSchedule(DoseTime* schedule, int size) {
 
   for (int i = 1; i < numDoses; i++) {
     // If the current element is not a duplicate of the previous element
+    // Move unique dose to the front of the schedule.
     if (compareDoseTime(schedule[uniqueDose], schedule[i]) || compareDoseTime(schedule[i], schedule[uniqueDose])) {
       uniqueDose++;
-      schedule[uniqueDose] = schedule[i];  // Move unique dose to the front of the schedule.
+      schedule[uniqueDose] = schedule[i];
     }
   }
   // Modify the total number of doses to exclude duplicates.
@@ -458,38 +457,35 @@ void loadCurrentDoseIndex() {
 void get24Time(char* timeStr) {
   struct tm* timeinfo = getLocalTime();
 
-  int currentHour = timeinfo -> tm_hour;
-  int currentMin = timeinfo -> tm_min;
-  int currentSec = timeinfo -> tm_sec;
+  int currentHour = timeinfo->tm_hour;
+  int currentMin = timeinfo->tm_min;
+  int currentSec = timeinfo->tm_sec;
 
   snprintf(timeStr, 20, PSTR("%02d:%02d:%02d"), currentHour, currentMin, currentSec);
 }
 
-// Get the current time in 12-hour format
+// Gets the current time in 12-hour format
 void get12Time(char* timeStr) {
-  // int currentHour = timeClient.getHours();
   struct tm* timeinfo = getLocalTime();
 
-  int currentHour = timeinfo -> tm_hour;
-  int currentMin = timeinfo -> tm_min;
-  int currentSec = timeinfo -> tm_sec;
+  int currentHour = timeinfo->tm_hour;
+  int currentMin = timeinfo->tm_min;
+  int currentSec = timeinfo->tm_sec;
   int displayHour = (currentHour % 12) != 0 ? (currentHour % 12) : 12;
 
   const char* ampm = currentHour < 12 ? "AM" : "PM";
   snprintf(timeStr, 20, PSTR("%02d:%02d:%02d %s"), displayHour, currentMin, currentSec, ampm);
 }
 
+// Gets the current date (month and date) and returns it as a string.
+// This is only used for displaying the current date on the LCD and nothing more.
 String getDate() {
-  // Time structure
-  // time_t epochTime = timeClient.getEpochTime();
-  // struct tm* ptm = gmtime((time_t*)&epochTime);
-
   struct tm* timeinfo = getLocalTime();
 
   const char* dayName = (const char*)pgm_read_ptr(&(weekdayNames[timeinfo->tm_wday]));
-  int currentDay = timeinfo->tm_mday; // tm_mday for getting current day in the month, not in the week.
+  int currentDay = timeinfo->tm_mday;  // tm_mday for getting current day in the month, not in the week.
   const char* monthName;
-  int currentMonth = timeinfo->tm_mon + 1; // +1 is indexing
+  int currentMonth = timeinfo->tm_mon + 1;  // +1 is for indexing; Preventing off by one or out of bounds errors
 
   if (currentMonth >= 1 && currentMonth <= 12) {
     monthName = (const char*)pgm_read_ptr(&(months[currentMonth - 1]));
@@ -592,7 +588,6 @@ void handleButtonPress() {
 
 void updateDisplay() {
   lcd.clear();
-  timeClient.update();
   String date = getDate();
   char timeStr[50];
 
@@ -615,12 +610,6 @@ void updateDisplay() {
 //----------------------------------------------------------------------------------------------
 
 void loop() {
-
-  // Update NTP every 1-hour
-  // if (((millis() - lastNTPUpdate) > NTP_UPDATE_INTERVAL) && (WiFi.status() == WL_CONNECTED)) {
-  //   timeClient.update();
-  //   lastNTPUpdate = millis();
-  // }
   handleButtonPress();
   handleScheduledDose();
   handlePumpOperation();
