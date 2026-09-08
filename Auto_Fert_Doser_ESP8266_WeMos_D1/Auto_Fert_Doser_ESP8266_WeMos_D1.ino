@@ -343,10 +343,9 @@ void updateNextDose() {
   DoseTime dose;
 
   // Wrap around to the first scheduled dose if at the end of schedule list.
-  if (currentDoseIndex + 1 > numDoses) {
+  if (currentDoseIndex + 1 >= numDoses) {
     currentDoseIndex = 0;
     nextDose = doseSchedule[currentDoseIndex];
-    currentDoseIndex++;
   } else {
     nextDose = doseSchedule[currentDoseIndex + 1];
     currentDoseIndex++;
