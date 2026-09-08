@@ -182,6 +182,11 @@ void initDoseSchedule() {
 // Dose/Schedule Operations
 
 bool isDateValid(DoseTime* doseTime) {
+  // Prevent any out of bounds weekDays
+  if ((doseTime->weekday < SUNDAY) || (doseTime->weekday > SATURDAY)) {
+    return false;
+  }
+
   // Prevent any out of bounds hours
   if ((doseTime->hour < 0) || (doseTime->hour > 23)) {
     return false;
