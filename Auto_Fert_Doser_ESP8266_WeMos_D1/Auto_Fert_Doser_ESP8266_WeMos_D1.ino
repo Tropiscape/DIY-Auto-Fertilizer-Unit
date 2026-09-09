@@ -319,16 +319,11 @@ void printSchedule() {
 DoseTime initNextDose(DoseTime* schedule, int size) {
   DoseTime dose;
 
-  // timeClient.update();
   struct tm* timeinfo = getLocalTime();
 
   dose.weekday = timeinfo->tm_wday;
   dose.hour = timeinfo->tm_hour;
   dose.minute = timeinfo->tm_min;
-
-  // dose.weekday = timeClient.getDay();
-  // dose.hour = timeClient.getHours();
-  // dose.minute = timeClient.getMinutes();
 
   // Find the first dose in the future.
   for (int i = 0; i < size; i++) {
@@ -372,11 +367,6 @@ void handleScheduledDose() {
     runPump("Scheduled Dose!");
     updateNextDose();
   }
-
-  // if (!pumpActivated && timeClient.getDay() == nextDose.weekday && timeClient.getHours() == nextDose.hour && timeClient.getMinutes() == nextDose.minute && timeClient.getSeconds() == 0) {
-  //   runPump("Scheduled Dose!");
-  //   updateNextDose();  // Update the next scheduled dose after running the current one
-  // }
 }
 
 void printDose(DoseTime dose) {
