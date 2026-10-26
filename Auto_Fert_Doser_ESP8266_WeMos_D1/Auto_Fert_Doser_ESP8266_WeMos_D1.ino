@@ -80,7 +80,7 @@ constexpr unsigned long DISPLAY_UPDATE_INTERVAL = 1000;  // Interval for updatin
 constexpr unsigned long PUMP_DURATION = static_cast<unsigned long>((doseAmount / PUMP_CALIBRATION) * PUMP_OVERFLOW_VALUE * 1000.0 + 0.5);
 
 // Maximum pump runtime failsafe to prevent pump from injecting too much. Pump should never run more than 101% of the actual dose!
-constexpr unsigned long MAX_PUMP_DURATION = PUMP_DURATION * (PUMP_DURATION / 9.9);
+constexpr unsigned long MAX_PUMP_DURATION = PUMP_DURATION * 1.01;
 
 constexpr unsigned long SECONDS_PER_MINUTE = 60;
 constexpr unsigned long SECONDS_PER_HOUR = 3600;
