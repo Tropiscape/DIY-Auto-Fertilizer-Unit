@@ -41,12 +41,15 @@ const char* password = "<PASSWORD HERE>";
 
 // Timezones can be found here:
 // https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char* timezone = "<+06>+6";           // GMT +6
-const char* ntpServer = "pool.ntp.org";     // Server to sync time with
-constexpr int timeFormat = 0;               // 0 for 12-hour; 1 for 24-hour
+const char* timezone = "<+06>+6";        // ex. GMT +6
+const char* ntpServer = "pool.ntp.org";  // Server to sync time with
+constexpr int timeFormat = 0;            // 0 for 12-hour; 1 for 24-hour
+
+// Pump Calibration
 constexpr float doseAmount = 1.0;           // Duration of the dose in Milliliters (ml).
 constexpr unsigned long DOSE_WINDOW = 300;  // How late a dose can fire. (in Seconds) Ex. 300 = 5 min
-constexpr float PUMP_CALIBRATION = 1.04;    // Pump calibration factor (for 1 mL/sec)
+constexpr float PUMP_CALIBRATION = 1.04;    // Pump calibration factor (for 1 mL/sec). Modify this when testing for accuracy against a certain length of time. The formula is (<x mL> / <total time tested in seconds>).
+constexpr float PUMP_OVERFLOW_VALUE = 0.9;  // Some pumps tend to overshoot dosage by 0.1 mL. This is a value to account for that. If you find that you are off by a different number, please change this!
 
 DoseTime doseSchedule[] = {
   // Format: {Day, Hour (24hr Format), Minute}
@@ -68,16 +71,27 @@ DoseTime doseSchedule[] = {
 constexpr int PUMP_PIN = D6;    // Pin connected to the pump (WeMos D1 mini D6)
 constexpr int BUTTON_PIN = D7;  // Pin connected to the manual dose button (WeMos D1 mini D7)
 
+constexpr uint8_t PUMP_ACTIVE_STATUS = HIGH;  // Relay/driver that turns the pump on
+constexpr uint8_t PUMP_IDLE_STATUS = (PUMP_ACTIVE_STATUS == HIGH) ? LOW : HIGH;
+
 constexpr unsigned long DEBOUNCE_DELAY = 50;             // Delay for button debounce (in milliseconds)
 constexpr unsigned long DISPLAY_UPDATE_INTERVAL = 1000;  // Interval for updating the display (in milliseconds)
-constexpr int PUMP_DURATION = (((PUMP_CALIBRATION - 1.0) * -1.0) + 0.9) * (doseAmount * 1000);  // The time (in milliseconds) for the pump to run.
-constexpr int MAX_PUMP_DURATION = PUMP_DURATION + 1;                                            // Maximum pump runtime failsafe to prevent pump from injecting too much.
+
+constexpr unsigned long PUMP_DURATION = static_cast<unsigned long>((doseAmount / PUMP_CALIBRATION) * PUMP_OVERFLOW_VALUE * 1000.0 + 0.5);
+
+// Maximum pump runtime failsafe to prevent pump from injecting too much. Pump should never run more than 101% of the actual dose!
+constexpr unsigned long MAX_PUMP_DURATION = PUMP_DURATION * (PUMP_DURATION / 9.9);
 
 constexpr unsigned long SECONDS_PER_MINUTE = 60;
 constexpr unsigned long SECONDS_PER_HOUR = 3600;
 constexpr unsigned long SECONDS_PER_DAY = 86400;
 constexpr unsigned long SECONDS_PER_WEEK = 604800;
 constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syncs in setup
+
+static_assert(doseAmount > 0.0, "doseAmount must be greater than zero!");
+static_assert(PUMP_DURATION > 0.0, "PUMP_DURATION must be greater than zero!");
+static_assert(PUMP_CALIBRATION > 0.0, "PUMP_CALIBRATION must be greater than zero!");
+static_assert(PUMP_OVERFLOW_VALUE > 0.0, "PUMP_OVERFLOW_VALUE must be greater than zero!");
 
 // Global variables
 unsigned long lastDebounceTime = 0;
@@ -87,7 +101,6 @@ int lastButtonState = HIGH;
 int buttonState = HIGH;
 bool pumpActivated = false;
 unsigned long pumpStartTime = 0;
-unsigned long pumpStopTime = 0;
 int numDoses = sizeof(doseSchedule) / sizeof(doseSchedule[0]);  // The number of doses based on the schedule.
 int currentDoseIndex = 0;
 DoseTime nextDose;
@@ -148,10 +161,29 @@ void initWiFi() {
   Serial.println(rssi);  // Higher negative values means weaker signal (Ex. -30 dBm is strong, -80 dBm is weak)
 }
 
+// void initPumpPins() {
+//   pinMode(PUMP_PIN, OUTPUT);
+//   digitalWrite(PUMP_PIN, LOW);
+//   pinMode(BUTTON_PIN, INPUT_PULLUP);
+// }
+
 void initPumpPins() {
   pinMode(PUMP_PIN, OUTPUT);
-  digitalWrite(PUMP_PIN, LOW);
+  digitalWrite(PUMP_PIN, PUMP_IDLE_STATUS);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  Serial.print(F("\n"));
+  Serial.println(F("================================================="));
+  Serial.println(F("              INITIALIZING PUMP PINS             "));
+  Serial.println(F("================================================="));
+  Serial.print(F("Pump run time: "));
+  Serial.print(PUMP_DURATION);
+  Serial.println(F(" ms"));
+  Serial.print(F("Pump failsafe: "));
+  Serial.print(MAX_PUMP_DURATION);
+  Serial.println(F(" ms"));
+  Serial.print(F("\n================================================="));
+  Serial.print(F("\n"));
 }
 
 void initTime() {
@@ -275,7 +307,7 @@ bool compareDoseTime(const DoseTime& date1, const DoseTime& date2) {
 }
 
 void printSchedule() {
-  Serial.print("\n");
+  Serial.print(F("\n"));
   Serial.println(F("================================================="));
   Serial.println(F("                    SCHEDULE                     "));
   Serial.println(F("================================================="));
@@ -497,15 +529,26 @@ String getDate() {
 // Pump Operations
 
 void handlePumpOperation() {
-  if (pumpActivated) {
-    unsigned long currentMillis = millis();
-    if (currentMillis >= pumpStopTime) {
-      Serial.println(F("Pump duration reached, stopping pump"));
-      stopPump("Dose complete");
-    } else {
-      // Update LCD while pump is running
+  if (!pumpActivated) {
+    return;
+  }
+
+  unsigned long elapsed = millis() - pumpStartTime;
+
+  if (elapsed >= MAX_PUMP_DURATION) {
+    Serial.println(F("Pump failsafe reached, stopping pump!"));
+    stopPump("Failsafe stop.");
+  } else if (elapsed >= PUMP_DURATION) {
+    Serial.println(F("Pump duration reached, stopping pump!"));
+    stopPump("Dose Complete");
+  } else {
+    static unsigned long lastStatusUpdate = 0;
+
+    // Update every second for higher accuracy and to prevent hammering the I2C bus every loop pass
+    if (millis() - lastStatusUpdate >= 1000) {
+      lastStatusUpdate = millis();
       lcd.setCursor(0, 1);
-      lcd.print("Pump is running.");
+      lcd.print("Pump Running...");
     }
   }
 }
@@ -515,16 +558,16 @@ void runPump(const char* reason) {
     Serial.println(F("Pump already active, ignoring activation request"));
     return;
   }
+
   Serial.println(F("Pump running!"));
   pumpActivated = true;
   pumpStartTime = millis();
-  pumpStopTime = pumpStartTime + PUMP_DURATION;
 
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(reason);
 
-  digitalWrite(PUMP_PIN, HIGH);
+  digitalWrite(PUMP_PIN, PUMP_ACTIVE_STATUS);
 }
 
 void stopPump(const char* reason) {
@@ -533,8 +576,7 @@ void stopPump(const char* reason) {
     return;
   }
 
-  digitalWrite(PUMP_PIN, LOW);
-
+  digitalWrite(PUMP_PIN, PUMP_IDLE_STATUS);
   unsigned long pumpRuntime = millis() - pumpStartTime;
 
   lcd.clear();
@@ -548,7 +590,6 @@ void stopPump(const char* reason) {
 
   pumpActivated = false;
 
-  unsigned long startDelayTime = millis();
   delay(2000);  // Display the completion message for 2 seconds
   updateDisplay();
 }
