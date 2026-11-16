@@ -446,10 +446,11 @@ void printDose(DoseTime dose) {
 //----------------------------------------------------------------------------------------------
 // LittleFS/Storage Operations
 
-void storeNextDoseToFile(DoseTime dose) {
-  File file = LittleFS.open("/nextDose.json", "w");
+bool validateFile(File f) {
+  if (!f) {
     Serial.print(F("Error opening LittleFS schedule file!"));
     return false;
+  }
 
   return true;
 }
