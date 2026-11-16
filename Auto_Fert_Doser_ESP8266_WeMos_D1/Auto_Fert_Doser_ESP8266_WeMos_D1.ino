@@ -86,6 +86,7 @@ constexpr unsigned long SECONDS_PER_MINUTE = 60;
 constexpr unsigned long SECONDS_PER_HOUR = 3600;
 constexpr unsigned long SECONDS_PER_DAY = 86400;
 constexpr unsigned long SECONDS_PER_WEEK = 604800;
+constexpr unsigned long WIFI_TIMEOUT = 30000;
 constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syncs in setup
 constexpr char scheduleFile[] = "/schedule.json";
 
@@ -138,27 +139,52 @@ void initFS() {
   }
 }
 
-void initWiFi() {
-  Serial.println("Connecting to ");
+void connectToWiFi() {
+  Serial.println(F("Connecting to "));
   Serial.println(ssid);
+  WiFi.mode(WIFI_STA);  // Station Mode Only. Prevents the doser from acting like an access point.
   WiFi.begin(ssid, password);
 
+  unsigned long start = millis();
+
   while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - start >= WIFI_TIMEOUT) {
+      Serial.println(F("WiFi timed out, attempting to reconnect..."));
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("WiFi Timed Out");
+      lcd.setCursor(0, 1);
+      lcd.print("Rebooting...");
+
+      delay(3000);  // 3 second delay before rebooting
+      ESP.restart();
+    }
+
+    // Delay for printing to serial.
     delay(500);
-    Serial.print(".");
+    Serial.print(F("."));
   }
+}
 
-  if (WiFi.status() != WL_CONNECTED) {
-    ESP.restart();
-  }
+void initWiFi() {
+  connectToWiFi();
 
-  Serial.print("\n");
-  Serial.println("IP Address:");
+  // // Attempt to reconnect if there is a failure
+  // if (WiFi.status() == WL_CONNECT_FAILED) {
+  //   Serial.println(F("Failed to connect to"));
+  //   Serial.print(ssid);
+  //   Serial.println(F("Attempting to reconnect..."));
+  //   connectToWiFi();
+  // }
+
+  Serial.print(F("\n"));
+  Serial.println(F("IP Address:"));
   Serial.println(WiFi.localIP());
   WiFi.setOutputPower(15);  // using 15 dBm for lower power consumption.
 
   long rssi = WiFi.RSSI();
-  Serial.print("Signal Strength (RSSI): ");
+  Serial.print(F("Signal Strength (RSSI): "));
   Serial.println(rssi);  // Higher negative values means weaker signal (Ex. -30 dBm is strong, -80 dBm is weak)
 }
 
