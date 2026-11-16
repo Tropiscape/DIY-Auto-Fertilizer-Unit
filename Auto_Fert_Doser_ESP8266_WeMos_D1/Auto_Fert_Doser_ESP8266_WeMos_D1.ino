@@ -326,6 +326,14 @@ bool compareDoseTime(const DoseTime& date1, const DoseTime& date2) {
   return date1.minute < date2.minute;
 }
 
+bool isLastEntryInSchedule() {
+  if (currentDoseIndex + 1 > numDoses) {
+    return true;
+  }
+
+  return false;
+}
+
 void printSchedule() {
   Serial.print(F("\n"));
   Serial.println(F("================================================="));
