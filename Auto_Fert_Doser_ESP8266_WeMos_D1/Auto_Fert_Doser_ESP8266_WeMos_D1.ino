@@ -41,7 +41,7 @@ const char* password = "<PASSWORD HERE>";
 
 // Timezones can be found here:
 // https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char* timezone = "<+06>+6";        // ex. GMT +6
+const char* timezone = "<+06>+6";        // ex. GMT -6
 const char* ntpServer = "pool.ntp.org";  // Server to sync time with
 constexpr int timeFormat = 0;            // 0 for 12-hour; 1 for 24-hour
 
