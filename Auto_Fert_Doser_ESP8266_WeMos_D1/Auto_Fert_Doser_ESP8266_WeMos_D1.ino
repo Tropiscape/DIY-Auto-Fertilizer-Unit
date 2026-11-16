@@ -104,7 +104,6 @@ bool pumpActivated = false;
 unsigned long pumpStartTime = 0;
 int numDoses = sizeof(doseSchedule) / sizeof(doseSchedule[0]);  // The number of doses based on the schedule.
 int currentDoseIndex = 0;
-DoseTime nextDose;
 
 // -----------------------------------------------------------------------------------
 
@@ -201,14 +200,14 @@ void initTime() {
 void initDoseSchedule() {
   sortSchedule(doseSchedule, numDoses);
   printSchedule();
-  initNextDose(doseSchedule, numDoses);
+  // initNextDose(doseSchedule, numDoses);
 
   Serial.println("Next Dose:");
-  printDose(nextDose);
-  storeNextDoseToFile(nextDose);
+  // printDose(nextDose);
+  // storeNextDoseToFile(nextDose);
   storeCurrentDoseIndex(currentDoseIndex);
 
-  loadNextDoseFromFile();
+  // loadNextDoseFromFile();
 }
 
 //----------------------------------------------------------------------------------------------
@@ -349,27 +348,29 @@ void printSchedule() {
 }
 
 // Obtain initial dose with respect to the current day. This is only ran once during setup.
-DoseTime initNextDose(DoseTime* schedule, int size) {
-  DoseTime dose;
+// DoseTime initNextDose(DoseTime* schedule, int size) {
+//   DoseTime dose;
 
-  struct tm* timeinfo = getLocalTime();
+//   struct tm* timeinfo = getLocalTime();
 
-  dose.weekday = timeinfo->tm_wday;
-  dose.hour = timeinfo->tm_hour;
-  dose.minute = timeinfo->tm_min;
+//   dose.weekday = timeinfo->tm_wday;
+//   dose.hour = timeinfo->tm_hour;
+//   dose.minute = timeinfo->tm_min;
 
-  // Find the first dose in the future.
-  for (int i = 0; i < size; i++) {
-    if (compareDoseTime(dose, schedule[i])) {
-      nextDose = schedule[i];
-      return nextDose;
-    }
-    currentDoseIndex++;
-  }
-  // Wrap around to the start of the week if no dose if found.
-  nextDose = schedule[0];
-  return nextDose;
-}
+//   // Find the first dose in the future.
+//   for (int i = 0; i < size; i++) {
+//     if (compareDoseTime(dose, schedule[i])) {
+//       currentDoseIndex = i;
+//       nextDose = schedule[i];
+//       return nextDose;
+//     }
+//   }
+
+//   // Wrap around to the start of the week if no dose if found.
+//   currentDoseIndex = 0;
+//   nextDose = schedule[0];
+//   return nextDose;
+// }
 
 // Obtain and update next dose
 void updateNextDose() {
@@ -378,13 +379,14 @@ void updateNextDose() {
   // Wrap around to the first scheduled dose if at the end of schedule list.
   if (currentDoseIndex + 1 >= numDoses) {
     currentDoseIndex = 0;
-    nextDose = doseSchedule[currentDoseIndex];
+    // nextDose = doseSchedule[currentDoseIndex];
   } else {
-    nextDose = doseSchedule[currentDoseIndex + 1];
+    // nextDose = doseSchedule[currentDoseIndex + 1];
     currentDoseIndex++;
   }
 
   // Print the next dose details
+  DoseTime nextDose = doseSchedule[currentDoseIndex + 1];
   Serial.print(F("Next Dose: "));
   printDose(nextDose);
 }
@@ -394,7 +396,7 @@ void handleScheduledDose() {
     return;
   }
 
-  long timeDiff = ((timeToSeconds(getLocalTime()) - doseTimeToSeconds(nextDose)) + SECONDS_PER_WEEK) % SECONDS_PER_WEEK;
+  long timeDiff = ((timeToSeconds(getLocalTime()) - doseTimeToSeconds(doseSchedule[currentDoseIndex + 1])) + SECONDS_PER_WEEK) % SECONDS_PER_WEEK;
 
   if (timeDiff <= DOSE_WINDOW) {
     runPump("Scheduled Dose!");
@@ -418,29 +420,78 @@ void printDose(DoseTime dose) {
 
 void storeNextDoseToFile(DoseTime dose) {
   File file = LittleFS.open("/nextDose.json", "w");
+    Serial.print(F("Error opening LittleFS schedule file!"));
+    return false;
 
-  // Set values in JSON Doc with the next dose.
-  doc["weekday"] = dose.weekday;
-  doc["hour"] = dose.hour;
-  doc["minute"] = dose.minute;
+  return true;
+}
+
+// void storeNextDoseToFile(DoseTime dose) {
+
+//   if (!isDateValid(&dose)) {
+//     Serial.print(F("Dose is invalid!"));
+//     return;
+//   }
+
+//   // Storing single doses. Not really needed, but it's here.
+//   File file = LittleFS.open("/nextDose.json", "w");
+
+//   // Set values in JSON Doc with the next dose.
+//   doc["weekday"] = dose.weekday;
+//   doc["hour"] = dose.hour;
+//   doc["minute"] = dose.minute;
+
+//   serializeJson(doc, file);
+//   file.close();
+// }
+
 
   serializeJson(doc, file);
   file.close();
+  return true;
 }
 
-void loadNextDoseFromFile() {
-  File file = LittleFS.open("/nextDose.json", "r");
-  deserializeJson(doc, file);
+bool loadSchedule() {
+  // Loads the full schedule. This is only ran once during startup.
+  // Returns true on load success, otherwise false.
 
-  nextDose.weekday = doc["weekday"];
-  nextDose.hour = doc["hour"];
-  nextDose.minute = doc["minute"];
+  File file = LittleFS.open(scheduleFile, "r");
 
+  if (!validateFile(file)) {
+    return false;
 
   Serial.println(F("Loaded Next Dose:"));
   printDose(nextDose);
   file.close();
 }
+
+// void loadNextDoseFromFile() {
+
+//   if (currentDoseIndex < 0) {
+//     Serial.print(F("currentDoseIndex is less than 0! Invalid index!"));
+//     return;
+//   }
+
+//   File file = LittleFS.open("/nextDose.json", "r");
+//   deserializeJson(doc, file);
+
+//   // nextDose.weekday = doc["weekday"];
+//   // nextDose.hour = doc["hour"];
+//   // nextDose.minute = doc["minute"];
+
+//   // There's no need to check if the dose is valid as validity for all doses is checked on startup.
+//   if (isLastEntryInSchedule()) {
+//     currentDoseIndex = 0;
+//     Serial.println(F("Loaded Next Dose:"));
+//     printDose(doc[currentDoseIndex]);
+//     file.close();
+//     return;
+//   }
+
+//   Serial.println(F("Loaded Next Dose:"));
+//   printDose(doc[currentDoseIndex + 1]);
+//   file.close();
+// }
 
 void storeCurrentDoseIndex(int index) {
   File file = LittleFS.open("/currentDoseIndex.json", "w");
@@ -460,14 +511,13 @@ void loadCurrentDoseIndex() {
 
   File file = LittleFS.open("/currentDoseIndex.json", "r");
 
-  // Default to the very first dose as a safe catch
+  // Default to the very first dose as a failsafe
   if (!file) {
     currentDoseIndex = 0;
     return;
   }
 
   deserializeJson(doc, file);
-
   currentDoseIndex = doc["currentDoseIndex"];
 
   Serial.println(F("Loaded Current Dose Index:"));
@@ -635,7 +685,7 @@ void updateDisplay() {
 
   Serial.println(date);
   Serial.println(timeStr);
-  Serial.println("");
+  Serial.println(F(""));
 
   lcd.setCursor(0, 0);
   lcd.print(date);
