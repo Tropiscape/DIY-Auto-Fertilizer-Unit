@@ -475,6 +475,30 @@ bool validateFile(File f) {
 //   file.close();
 // }
 
+bool saveSchedule() {
+  // Saves the entire schedule rather than a single entry.
+  // Returns true if save successful, otherwise false (obviously).
+
+  JsonDocument doc;
+  JsonArray jArray = doc["doses"].to<JsonArray>();
+
+  for (DoseTime doseEntry : doseSchedule) {
+    JsonObject dose = jArray.add<JsonObject>();
+
+    dose["weekday"] = doseEntry.weekday;
+    dose["hour"] = doseEntry.hour;
+    dose["minute"] = doseEntry.minute;
+  }
+
+  // for (int i = 0 ; i < numDoses; i++) {
+  //   JsonObject dose = jArray.add<JsonObject>();
+
+  //   dose["weekday"] = doseSchedule[i].weekday;
+  //   dose["hour"] = doseSchedule[i].weekday;
+  //   dose["minute"] = doseSchedule[i].minute;
+  // }
+
+  File file = LittleFS.open(scheduleFile, "w");
 
   serializeJson(doc, file);
   file.close();
@@ -489,10 +513,36 @@ bool loadSchedule() {
 
   if (!validateFile(file)) {
     return false;
+  }
 
-  Serial.println(F("Loaded Next Dose:"));
-  printDose(nextDose);
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, file);
   file.close();
+
+  if (error) {
+    return false;
+  }
+
+  unsigned int count = 0;
+  numDoses = 0;  // Reset number in case schedule has been modified
+
+  for (JsonObject dose : doc["doses"].as<JsonArray>()) {
+    // Update schedule by copying entries.
+    // This DOES overwrite any schedules in memory, but it shouldn't be too intensive given how MAX_DOSES is 64 (unless modified).
+
+    // There is no need to check if a dose is valid as validity checking is done on startup or when the schedule has been modified.
+
+    DoseTime entry;
+
+    entry.weekday = dose["weekday"];
+    entry.hour = dose["hour"];
+    entry.minute = dose["minute"];
+
+    doseSchedule[count] = entry;
+    count++;
+  }
+  numDoses = count;
+  return true;
 }
 
 // void loadNextDoseFromFile() {
@@ -536,7 +586,17 @@ void storeCurrentDoseIndex(int index) {
 void loadCurrentDoseIndex() {
   // Avoid empty schedules
   if (numDoses == 0) {
-    return;
+    Serial.print(F("Number of Doses cannot be zero!"));
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("ERROR!");
+    lcd.setCursor(0, 1);
+    lcd.print("EMPTY SCHEDULE");
+
+    // More of a defensive thing to prevent the pump from running inaccurate entries
+    delay(5000);
+    ESP.restart();
   }
 
   File file = LittleFS.open(currentIndexFile, "r");
