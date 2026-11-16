@@ -87,6 +87,7 @@ constexpr unsigned long SECONDS_PER_HOUR = 3600;
 constexpr unsigned long SECONDS_PER_DAY = 86400;
 constexpr unsigned long SECONDS_PER_WEEK = 604800;
 constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syncs in setup
+constexpr char scheduleFile[] = "/schedule.json";
 
 static_assert(doseAmount > 0.0, "doseAmount must be greater than zero!");
 static_assert(PUMP_DURATION > 0.0, "PUMP_DURATION must be greater than zero!");
