@@ -133,7 +133,7 @@ void initLCD() {
 
 void initFS() {
   if (!LittleFS.begin()) {
-    Serial.println("Failed to mount LittleFS");
+    Serial.println(F("Failed to mount LittleFS"));
     return;
   }
 }
