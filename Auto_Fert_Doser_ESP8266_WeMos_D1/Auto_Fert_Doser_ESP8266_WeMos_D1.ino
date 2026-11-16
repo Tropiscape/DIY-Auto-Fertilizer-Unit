@@ -482,21 +482,13 @@ bool saveSchedule() {
   JsonDocument doc;
   JsonArray jArray = doc["doses"].to<JsonArray>();
 
-  for (DoseTime doseEntry : doseSchedule) {
+  for (int i = 0 ; i < numDoses; i++) {
     JsonObject dose = jArray.add<JsonObject>();
 
-    dose["weekday"] = doseEntry.weekday;
-    dose["hour"] = doseEntry.hour;
-    dose["minute"] = doseEntry.minute;
+    dose["weekday"] = doseSchedule[i].weekday;
+    dose["hour"] = doseSchedule[i].weekday;
+    dose["minute"] = doseSchedule[i].minute;
   }
-
-  // for (int i = 0 ; i < numDoses; i++) {
-  //   JsonObject dose = jArray.add<JsonObject>();
-
-  //   dose["weekday"] = doseSchedule[i].weekday;
-  //   dose["hour"] = doseSchedule[i].weekday;
-  //   dose["minute"] = doseSchedule[i].minute;
-  // }
 
   File file = LittleFS.open(scheduleFile, "w");
 
@@ -528,8 +520,6 @@ bool loadSchedule() {
 
   for (JsonObject dose : doc["doses"].as<JsonArray>()) {
     // Update schedule by copying entries.
-    // This DOES overwrite any schedules in memory, but it shouldn't be too intensive given how MAX_DOSES is 64 (unless modified).
-
     // There is no need to check if a dose is valid as validity checking is done on startup or when the schedule has been modified.
 
     DoseTime entry;
