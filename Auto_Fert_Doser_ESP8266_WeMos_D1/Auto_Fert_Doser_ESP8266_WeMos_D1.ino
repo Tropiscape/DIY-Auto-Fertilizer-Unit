@@ -89,6 +89,7 @@ constexpr unsigned long SECONDS_PER_WEEK = 604800;
 constexpr unsigned long WIFI_TIMEOUT = 30000;
 constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syncs in setup
 constexpr char scheduleFile[] = "/schedule.json";
+constexpr char currentIndexFile[] = "/currentDoseIndex.json";
 
 static_assert(doseAmount > 0.0, "doseAmount must be greater than zero!");
 static_assert(PUMP_DURATION > 0.0, "PUMP_DURATION must be greater than zero!");
@@ -523,7 +524,7 @@ bool loadSchedule() {
 // }
 
 void storeCurrentDoseIndex(int index) {
-  File file = LittleFS.open("/currentDoseIndex.json", "w");
+  File file = LittleFS.open(currentIndexFile, "w");
 
   // Set values in JSON Doc with the next dose.
   doc["currentDoseIndex"] = index;
@@ -538,7 +539,7 @@ void loadCurrentDoseIndex() {
     return;
   }
 
-  File file = LittleFS.open("/currentDoseIndex.json", "r");
+  File file = LittleFS.open(currentIndexFile, "r");
 
   // Default to the very first dose as a failsafe
   if (!file) {
