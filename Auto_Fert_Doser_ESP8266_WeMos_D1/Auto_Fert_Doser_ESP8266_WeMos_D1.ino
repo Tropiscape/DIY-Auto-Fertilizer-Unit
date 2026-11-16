@@ -99,12 +99,12 @@ static_assert(PUMP_OVERFLOW_VALUE > 0.0, "PUMP_OVERFLOW_VALUE must be greater th
 unsigned long lastDebounceTime = 0;
 unsigned long lastDisplayUpdate = 0;
 unsigned long lastNTPUpdate = 0;
+unsigned long pumpStartTime = 0;
+unsigned int numDoses = sizeof(doseSchedule) / sizeof(doseSchedule[0]);  // The number of doses based on the schedule.
+unsigned int currentDoseIndex = 0;
 int lastButtonState = HIGH;
 int buttonState = HIGH;
 bool pumpActivated = false;
-unsigned long pumpStartTime = 0;
-int numDoses = sizeof(doseSchedule) / sizeof(doseSchedule[0]);  // The number of doses based on the schedule.
-int currentDoseIndex = 0;
 
 // -----------------------------------------------------------------------------------
 
@@ -115,7 +115,6 @@ void setup() {
   initLCD();
   initFS();
   initWiFi();
-  initPumpPins();
   initTime();
   initDoseSchedule();
 }
@@ -188,15 +187,9 @@ void initWiFi() {
   Serial.println(rssi);  // Higher negative values means weaker signal (Ex. -30 dBm is strong, -80 dBm is weak)
 }
 
-// void initPumpPins() {
-//   pinMode(PUMP_PIN, OUTPUT);
-//   digitalWrite(PUMP_PIN, LOW);
-//   pinMode(BUTTON_PIN, INPUT_PULLUP);
-// }
-
 void initPumpPins() {
-  pinMode(PUMP_PIN, OUTPUT);
   digitalWrite(PUMP_PIN, PUMP_IDLE_STATUS);
+  pinMode(PUMP_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   Serial.print(F("\n"));
