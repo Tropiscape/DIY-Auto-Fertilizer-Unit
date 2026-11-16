@@ -482,11 +482,11 @@ bool saveSchedule() {
   JsonDocument doc;
   JsonArray jArray = doc["doses"].to<JsonArray>();
 
-  for (int i = 0 ; i < numDoses; i++) {
+  for (int i = 0; i < numDoses; i++) {
     JsonObject dose = jArray.add<JsonObject>();
 
     dose["weekday"] = doseSchedule[i].weekday;
-    dose["hour"] = doseSchedule[i].weekday;
+    dose["hour"] = doseSchedule[i].hour;
     dose["minute"] = doseSchedule[i].minute;
   }
 
