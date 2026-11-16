@@ -52,7 +52,7 @@ constexpr float PUMP_CALIBRATION = 1.04;    // Pump calibration factor (for 1 mL
 constexpr float PUMP_OVERFLOW_VALUE = 0.9;  // Some pumps tend to overshoot dosage by 0.1 mL. This is a value to account for that. If you find that you are off by a different number, please change this!
 
 DoseTime doseSchedule[] = {
-  // Format: {Day, Hour (24hr Format), Minute}
+  // Format: { Day, Hour (24hr Format), Minute }
   // Ex. {SATURDAY, 13, 0} = Saturday @ 1:00 pm or 13:00.
   // Min Hour = 0; Max Hour = 23 (Hour 24 == 0)
   // Min Minute = 0; Max Minute = 59 (Minute 60 == 0)
