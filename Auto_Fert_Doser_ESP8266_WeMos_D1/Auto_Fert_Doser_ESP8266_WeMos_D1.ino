@@ -108,6 +108,7 @@ int currentDoseIndex = 0;
 // -----------------------------------------------------------------------------------
 
 void setup() {
+  initPumpPins();
   Serial.begin(115200);  // For Serial Monitor
 
   initLCD();
