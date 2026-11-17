@@ -271,6 +271,11 @@ long doseTimeToSeconds(DoseTime doseTime) {
 
 void sortSchedule(DoseTime* schedule, int size) {
 
+  if (size <= 0) {
+    Serial.print("sortSchedule() - size parameter needs to be greater than 0!");
+    return;
+  }
+
   // Remove invalid entries first
   int validCount = 0;
   for (int i = 0; i < size; i++) {
@@ -296,7 +301,7 @@ void sortSchedule(DoseTime* schedule, int size) {
   // This section also removes any duplicates found.
   // Track the number of unique doses.
   // Starts at 1 as the first entry will always be unique.
-  int uniqueDose = 0;
+  int uniqueDose = 1;
 
   for (int i = 1; i < numDoses; i++) {
     // If the current element is not a duplicate of the previous element
@@ -306,9 +311,9 @@ void sortSchedule(DoseTime* schedule, int size) {
       schedule[uniqueDose] = schedule[i];
     }
   }
+
   // Modify the total number of doses to exclude duplicates.
-  // + 1 as the first entry is always unique.
-  numDoses = uniqueDose + 1;
+  numDoses = uniqueDose;
 }
 
 bool compareDoseTime(const DoseTime& date1, const DoseTime& date2) {
