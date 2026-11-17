@@ -429,7 +429,7 @@ void handleScheduledDose() {
     return;
   }
 
-  long timeDiff = ((timeToSeconds(getLocalTime()) - doseTimeToSeconds(doseSchedule[currentDoseIndex + 1])) + SECONDS_PER_WEEK) % SECONDS_PER_WEEK;
+  long timeDiff = ((timeToSeconds(getLocalTime()) - doseTimeToSeconds(doseSchedule[currentDoseIndex])) + SECONDS_PER_WEEK) % SECONDS_PER_WEEK;
 
   if (timeDiff <= DOSE_WINDOW) {
     runPump("Scheduled Dose!");
