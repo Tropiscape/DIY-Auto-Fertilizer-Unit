@@ -81,7 +81,6 @@ constexpr unsigned long PUMP_DURATION = static_cast<unsigned long>((doseAmount /
 
 // Maximum pump runtime failsafe to prevent pump from injecting too much. Pump should never run more than 101% of the actual dose!
 constexpr unsigned long MAX_PUMP_DURATION = PUMP_DURATION * 1.01;
-
 constexpr unsigned long SECONDS_PER_MINUTE = 60;
 constexpr unsigned long SECONDS_PER_HOUR = 3600;
 constexpr unsigned long SECONDS_PER_DAY = 86400;
