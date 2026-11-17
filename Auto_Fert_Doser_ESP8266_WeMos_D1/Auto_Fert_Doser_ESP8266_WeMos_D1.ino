@@ -414,7 +414,7 @@ void updateNextDose() {
   }
 
   // Print the next dose details
-  DoseTime nextDose = doseSchedule[currentDoseIndex + 1];
+  DoseTime nextDose = doseSchedule[currentDoseIndex];
   Serial.print(F("Next Dose: "));
   printDose(nextDose);
 }
