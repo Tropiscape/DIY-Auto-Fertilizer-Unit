@@ -519,6 +519,12 @@ bool loadSchedule() {
     return false;
   }
 
+  JsonArray schedule = doc["doses"].as<JsonArray>();
+  if (!schedule) {
+    Serial.print(F("/schedule.json: 'doses' is missing or not an array. Assigning defaults"));
+    return false;
+  }
+
   unsigned int count = 0;
   numDoses = 0;  // Reset number in case schedule has been modified
 
@@ -528,12 +534,17 @@ bool loadSchedule() {
 
     DoseTime entry;
 
-    entry.weekday = dose["weekday"];
-    entry.hour = dose["hour"];
-    entry.minute = dose["minute"];
+    // Using '| -1' to catch any missing JsonArray keys
+    entry.weekday = dose["weekday"] | -1;
+    entry.hour = dose["hour"] | -1;
+    entry.minute = dose["minute"] | -1;
 
-    doseSchedule[count] = entry;
-    count++;
+    if (!isDateValid(&entry)) {
+      Serial.print("loadSchedule() - Dose is missing a key. Skipping dose.");
+    } else {
+      doseSchedule[count] = entry;
+      count++;
+    }
   }
   numDoses = count;
   return true;
