@@ -220,7 +220,7 @@ void initTime() {
 void initDoseSchedule() {
   sortSchedule(doseSchedule, numDoses);
   printSchedule();
-  // initNextDose(doseSchedule, numDoses);
+  initIndex(doseSchedule, numDoses);
 
   Serial.println("Next Dose:");
   // printDose(nextDose);
@@ -381,34 +381,34 @@ void printSchedule() {
 }
 
 // Obtain initial dose with respect to the current day. This is only ran once during setup.
-// DoseTime initNextDose(DoseTime* schedule, int size) {
-//   DoseTime dose;
+void initIndex(DoseTime* schedule, int size) {
 
-//   struct tm* timeinfo = getLocalTime();
+  if (size <= 0) {
+    Serial.print(F("initIndex() - Schedule needs to be larger than 0!"));
+    return;
+  }
 
-//   dose.weekday = timeinfo->tm_wday;
-//   dose.hour = timeinfo->tm_hour;
-//   dose.minute = timeinfo->tm_min;
+  DoseTime dose;
+  struct tm* timeinfo = getLocalTime();
 
-//   // Find the first dose in the future.
-//   for (int i = 0; i < size; i++) {
-//     if (compareDoseTime(dose, schedule[i])) {
-//       currentDoseIndex = i;
-//       nextDose = schedule[i];
-//       return nextDose;
-//     }
-//   }
+  dose.weekday = timeinfo->tm_wday;
+  dose.hour = timeinfo->tm_hour;
+  dose.minute = timeinfo->tm_min;
 
-//   // Wrap around to the start of the week if no dose if found.
-//   currentDoseIndex = 0;
-//   nextDose = schedule[0];
-//   return nextDose;
-// }
+  // Find the first dose in the future.
+  for (int i = 0; i < size; i++) {
+    if (compareDoseTime(dose, schedule[i])) {
+      currentDoseIndex = i;
+      return;
+    }
+  }
+
+  // Wrap around to the start of the week if no dose if found.
+  currentDoseIndex = 0;
+}
 
 // Obtain and update next dose
 void updateNextDose() {
-  DoseTime dose;
-
   // Wrap around to the first scheduled dose if at the end of schedule list.
   if (currentDoseIndex + 1 >= numDoses) {
     currentDoseIndex = 0;
