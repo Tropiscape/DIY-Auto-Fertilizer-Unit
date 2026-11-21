@@ -92,6 +92,9 @@ constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syn
 constexpr char scheduleFile[] = "/schedule.json";
 constexpr char tempFile[] = "/schedule.tmp";
 constexpr char currentIndexFile[] = "/currentDoseIndex.json";
+constexpr DoseTime defaultSchedule[1] = {
+  { SUNDAY, 12, 0 },
+};
 
 static_assert(doseAmount > 0.0, "doseAmount must be greater than zero!");
 static_assert(PUMP_DURATION > 0.0, "PUMP_DURATION must be greater than zero!");
