@@ -298,10 +298,14 @@ void sortSchedule(DoseTime* schedule, int size) {
   // Any duplicate entries are at the back and can easily be indexed out.
   shellSortKnuth(schedule, size, compareDoseTime);
 
+  if (numDoses <= 0) {
+    Serial.print("numDoses is <= 0!");
+    return;
+  }
+
   // This section also removes any duplicates found.
   // Track the number of unique doses.
-  // Starts at 1 as the first entry will always be unique.
-  int uniqueDose = 1;
+  int uniqueDose = 0;
 
   for (int i = 1; i < numDoses; i++) {
     // If the current element is not a duplicate of the previous element
@@ -313,7 +317,14 @@ void sortSchedule(DoseTime* schedule, int size) {
   }
 
   // Modify the total number of doses to exclude duplicates.
-  numDoses = uniqueDose;
+  // '+1' is for counting the first dose as it will always be unique.
+
+  if (uniqueDose <= 0) {
+    Serial.print("No unique doses found!");
+    return;
+  }
+
+  numDoses = uniqueDose + 1;
 }
 
 bool compareDoseTime(const DoseTime& date1, const DoseTime& date2) {
