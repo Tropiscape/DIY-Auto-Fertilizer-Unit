@@ -452,7 +452,15 @@ void handleScheduledDose() {
 void printDose(DoseTime dose) {
   Serial.println(F("-------------------------------------------------"));
   Serial.print(F("Day: "));
-  Serial.println((const char*)pgm_read_ptr(&(weekdayNames[dose.weekday])));
+
+  if (dose.weekday <=SATURDAY && dose.weekday >= SUNDAY) {
+    Serial.println((const char*)pgm_read_ptr(&(weekdayNames[dose.weekday])));
+  } else {
+    Serial.print(F("Invalid Weekday: ("));
+    Serial.print(dose.weekday);
+    Serial.println(F(")"));
+  }
+
   Serial.print(F("Hour: "));
   Serial.println(dose.hour);
   Serial.print(F("Minute: "));
