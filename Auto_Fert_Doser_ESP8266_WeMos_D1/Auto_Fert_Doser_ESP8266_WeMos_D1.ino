@@ -444,7 +444,7 @@ void printSchedule() {
 void initIndex(DoseTime* schedule, int size) {
 
   if (size <= 0) {
-    Serial.print(F("initIndex() - Schedule needs to be larger than 0!"));
+    Serial.println(F("initIndex() - Schedule needs to be larger than 0!"));
     return;
   }
 
@@ -501,7 +501,7 @@ void printDose(DoseTime dose) {
   Serial.println(F("-------------------------------------------------"));
   Serial.print(F("Day: "));
 
-  if (dose.weekday <=SATURDAY && dose.weekday >= SUNDAY) {
+  if (dose.weekday <= SATURDAY && dose.weekday >= SUNDAY) {
     Serial.println((const char*)pgm_read_ptr(&(weekdayNames[dose.weekday])));
   } else {
     Serial.print(F("Invalid Weekday: ("));
@@ -513,7 +513,7 @@ void printDose(DoseTime dose) {
   Serial.println(dose.hour);
   Serial.print(F("Minute: "));
   Serial.println(dose.minute);
-  Serial.print(F("-------------------------------------------------\n"));
+  Serial.print(F("=================================================\n\n"));
 }
 
 //----------------------------------------------------------------------------------------------
@@ -521,38 +521,19 @@ void printDose(DoseTime dose) {
 
 bool validateFile(const File &f) {
   if (!f) {
-    Serial.print(F("Error opening LittleFS schedule file!"));
+    Serial.println(F("Error opening LittleFS schedule file!"));
     return false;
   }
 
   return true;
 }
 
-// void storeNextDoseToFile(DoseTime dose) {
-
-//   if (!isDateValid(&dose)) {
-//     Serial.print(F("Dose is invalid!"));
-//     return;
-//   }
-
-//   // Storing single doses. Not really needed, but it's here.
-//   File file = LittleFS.open("/nextDose.json", "w");
-
-//   // Set values in JSON Doc with the next dose.
-//   doc["weekday"] = dose.weekday;
-//   doc["hour"] = dose.hour;
-//   doc["minute"] = dose.minute;
-
-//   serializeJson(doc, file);
-//   file.close();
-// }
-
 bool saveSchedule() {
   // Saves the entire schedule rather than a single entry.
   // Returns true if save successful, otherwise false (obviously).
 
   if (numDoses <= 0) {
-    Serial.print(F("saveSchedule() - Number of doses cannot be less than or equal to zero!"));
+    Serial.println(F("saveSchedule() - Number of doses cannot be less than or equal to zero!"));
     return false;
   }
 
@@ -576,13 +557,13 @@ bool saveSchedule() {
   temp.close();
 
   if (bytesWritten != measureJson(doc)) {
-    Serial.print(F("saveSchedule() - incomplete write!"));
+    Serial.println(F("saveSchedule() - incomplete write!"));
     LittleFS.remove(tempFile);
     return false;
   }
 
   if (!LittleFS.rename(tempFile, scheduleFile)) {
-    Serial.print(F("saveSchedule() - rename failed!"));
+    Serial.println(F("saveSchedule() - rename failed!"));
     LittleFS.remove(tempFile);
     return false;
   }
@@ -604,6 +585,7 @@ bool loadSchedule() {
   File file = LittleFS.open(scheduleFile, "r");
 
   if (!validateFile(file)) {
+    Serial.println(F("loadSchedule() - Error loading schedule file!"));
     return false;
   }
 
@@ -612,12 +594,13 @@ bool loadSchedule() {
   file.close();
 
   if (error) {
+    Serial.println(F("loadSchedule() - Error deserializing Schedule"));
     return false;
   }
 
   JsonArray schedule = doc["doses"].as<JsonArray>();
   if (!schedule) {
-    Serial.print(F("/schedule.json: 'doses' is missing or not an array. Assigning defaults"));
+    Serial.println(F("/schedule.json: 'doses' is missing or not an array. Assigning defaults"));
     return false;
   }
 
@@ -636,7 +619,7 @@ bool loadSchedule() {
     entry.minute = dose["minute"] | -1;
 
     if (!isDateValid(&entry)) {
-      Serial.print("loadSchedule() - Dose is missing a key. Skipping dose.");
+      Serial.println("loadSchedule() - Dose is missing a key. Skipping dose.");
     } else {
       doseSchedule[count] = entry;
       count++;
@@ -645,34 +628,6 @@ bool loadSchedule() {
   numDoses = count;
   return true;
 }
-
-// void loadNextDoseFromFile() {
-
-//   if (currentDoseIndex < 0) {
-//     Serial.print(F("currentDoseIndex is less than 0! Invalid index!"));
-//     return;
-//   }
-
-//   File file = LittleFS.open("/nextDose.json", "r");
-//   deserializeJson(doc, file);
-
-//   // nextDose.weekday = doc["weekday"];
-//   // nextDose.hour = doc["hour"];
-//   // nextDose.minute = doc["minute"];
-
-//   // There's no need to check if the dose is valid as validity for all doses is checked on startup.
-//   if (isLastEntryInSchedule()) {
-//     currentDoseIndex = 0;
-//     Serial.println(F("Loaded Next Dose:"));
-//     printDose(doc[currentDoseIndex]);
-//     file.close();
-//     return;
-//   }
-
-//   Serial.println(F("Loaded Next Dose:"));
-//   printDose(doc[currentDoseIndex + 1]);
-//   file.close();
-// }
 
 void storeCurrentDoseIndex(int index) {
   File file = LittleFS.open(currentIndexFile, "w");
