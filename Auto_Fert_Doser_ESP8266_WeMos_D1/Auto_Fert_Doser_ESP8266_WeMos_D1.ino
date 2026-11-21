@@ -88,6 +88,7 @@ constexpr unsigned long SECONDS_PER_WEEK = 604800;
 constexpr unsigned long WIFI_TIMEOUT = 30000;
 constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syncs in setup
 constexpr char scheduleFile[] = "/schedule.json";
+constexpr char tempFile[] = "/schedule.tmp";
 constexpr char currentIndexFile[] = "/currentDoseIndex.json";
 
 static_assert(doseAmount > 0.0, "doseAmount must be greater than zero!");
@@ -462,7 +463,7 @@ void printDose(DoseTime dose) {
 //----------------------------------------------------------------------------------------------
 // LittleFS/Storage Operations
 
-bool validateFile(File f) {
+bool validateFile(const File &f) {
   if (!f) {
     Serial.print(F("Error opening LittleFS schedule file!"));
     return false;
@@ -494,6 +495,11 @@ bool saveSchedule() {
   // Saves the entire schedule rather than a single entry.
   // Returns true if save successful, otherwise false (obviously).
 
+  if (numDoses <= 0) {
+    Serial.print(F("saveSchedule() - Number of doses cannot be less than or equal to zero!"));
+    return false;
+  }
+
   JsonDocument doc;
   JsonArray jArray = doc["doses"].to<JsonArray>();
 
@@ -505,10 +511,26 @@ bool saveSchedule() {
     dose["minute"] = doseSchedule[i].minute;
   }
 
-  File file = LittleFS.open(scheduleFile, "w");
+  File temp = LittleFS.open(tempFile, "w");
+  if (!validateFile(temp)) {
+    return false;
+  }
 
-  serializeJson(doc, file);
-  file.close();
+  size_t bytesWritten = serializeJson(doc, temp);
+  temp.close();
+
+  if (bytesWritten != measureJson(doc)) {
+    Serial.print(F("saveSchedule() - incomplete write!"));
+    LittleFS.remove(tempFile);
+    return false;
+  }
+
+  if (!LittleFS.rename(tempFile, scheduleFile)) {
+    Serial.print(F("saveSchedule() - rename failed!"));
+    LittleFS.remove(tempFile);
+    return false;
+  }
+
   return true;
 }
 
