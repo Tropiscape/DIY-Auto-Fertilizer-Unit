@@ -572,6 +572,13 @@ bool saveSchedule() {
   return true;
 }
 
+void loadDefaultSchedule() {
+  memcpy(doseSchedule, defaultSchedule, sizeof(defaultSchedule));
+
+  // This should always equal to 1. Size checking is in case default schedule is modified or somehow corrupted
+  numDoses = sizeof(doseSchedule) / sizeof(doseSchedule[0]);
+}
+
 bool loadSchedule() {
   // Loads the full schedule. This is only ran once during startup.
   // Returns true on load success, otherwise false.
