@@ -246,16 +246,34 @@ void initTime() {
 }
 
 void initDoseSchedule() {
-  sortSchedule(doseSchedule, numDoses);
+  Serial.println(F("Loading schedule..."));
+  const unsigned int scheduleSize = sizeof(doseSchedule) / sizeof(doseSchedule[0]);
+  
+  if (loadSchedule()) {
+    Serial.println(F("Loaded schedule from flash!"));
+  } else if (scheduleSize >= 1) {
+    // This should only be done once at startup.
+    sortSchedule(doseSchedule, scheduleSize);
+    initIndex(doseSchedule, scheduleSize);
+    
+    if (saveSchedule()) {
+      Serial.println(F("Created new schedule and stored in flash"));
+    } else {
+      Serial.println(F("Created new schedule, but saving failed!"));
+    }
+
+  } else {
+    // Failsafe
+    loadDefaultSchedule();
+    initIndex(doseSchedule, 1);
+    Serial.println(F("Loaded default schedule"));
+  }
+
   printSchedule();
-  initIndex(doseSchedule, numDoses);
-
-  Serial.println("Next Dose:");
-  // printDose(nextDose);
-  // storeNextDoseToFile(nextDose);
   storeCurrentDoseIndex(currentDoseIndex);
-
-  // loadNextDoseFromFile();
+  Serial.println(F("================================================="));
+  Serial.println(F("Next Dose:"));
+  printDose(doseSchedule[currentDoseIndex]);
 }
 
 //----------------------------------------------------------------------------------------------
