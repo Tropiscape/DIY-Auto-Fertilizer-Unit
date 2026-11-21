@@ -70,6 +70,7 @@ DoseTime doseSchedule[] = {
 // Constants
 constexpr int PUMP_PIN = D6;    // Pin connected to the pump (WeMos D1 mini D6)
 constexpr int BUTTON_PIN = D7;  // Pin connected to the manual dose button (WeMos D1 mini D7)
+constexpr unsigned int wiFiPower = 15;
 
 constexpr uint8_t PUMP_ACTIVE_STATUS = HIGH;  // Relay/driver that turns the pump on
 constexpr uint8_t PUMP_IDLE_STATUS = (PUMP_ACTIVE_STATUS == HIGH) ? LOW : HIGH;
@@ -87,6 +88,7 @@ constexpr unsigned long SECONDS_PER_DAY = 86400;
 constexpr unsigned long SECONDS_PER_WEEK = 604800;
 constexpr unsigned long WIFI_TIMEOUT = 30000;
 constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syncs in setup
+
 constexpr char scheduleFile[] = "/schedule.json";
 constexpr char tempFile[] = "/schedule.tmp";
 constexpr char currentIndexFile[] = "/currentDoseIndex.json";
@@ -142,14 +144,19 @@ void initFS() {
 void connectToWiFi() {
   Serial.println(F("Connecting to "));
   Serial.println(ssid);
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Connecting WiFi");
+
   WiFi.mode(WIFI_STA);  // Station Mode Only. Prevents the doser from acting like an access point.
+  WiFi.setOutputPower(wiFiPower); // using 15 dBm for lower power consumption.
   WiFi.begin(ssid, password);
 
   unsigned long start = millis();
-
   while (WiFi.status() != WL_CONNECTED) {
     if (millis() - start >= WIFI_TIMEOUT) {
-      Serial.println(F("WiFi timed out, attempting to reconnect..."));
+      Serial.println(F("\nWiFi timed out, rebooting..."));
 
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -170,22 +177,39 @@ void connectToWiFi() {
 void initWiFi() {
   connectToWiFi();
 
-  // // Attempt to reconnect if there is a failure
-  // if (WiFi.status() == WL_CONNECT_FAILED) {
-  //   Serial.println(F("Failed to connect to"));
-  //   Serial.print(ssid);
-  //   Serial.println(F("Attempting to reconnect..."));
-  //   connectToWiFi();
-  // }
-
   Serial.print(F("\n"));
   Serial.println(F("IP Address:"));
   Serial.println(WiFi.localIP());
-  WiFi.setOutputPower(15);  // using 15 dBm for lower power consumption.
 
   long rssi = WiFi.RSSI();
   Serial.print(F("Signal Strength (RSSI): "));
-  Serial.println(rssi);  // Higher negative values means weaker signal (Ex. -30 dBm is strong, -80 dBm is weak)
+  Serial.print(rssi);  // Higher negative values means weaker signal (Ex. -30 dBm is strong, -80 dBm is weak)
+  Serial.print(F(" dBm "));
+  Serial.print(getSignalQuality(rssi));
+  Serial.print(F("\n"));
+}
+
+const char* getSignalQuality(long strength) {
+  if (strength >= 1) {
+    return "(No Signal)";
+  }
+  if (strength >= -50) {
+    return "(Excellent)";
+  } 
+  if (strength >= -60) {
+    return "(Good)";
+  }
+  if (strength >= -70) {
+    return "(Fair)";
+  }
+  if (strength >= -80) {
+    return "(Weak)";
+  }
+  if (strength > -90) {
+    return "(Very Weak)";
+  }
+
+  return "(Unstable)";
 }
 
 void initPumpPins() {
