@@ -343,7 +343,7 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
   }
 
   // Remove invalid entries first
-  int validCount = 0;
+  unsigned int validCount = 0; // Can never be zero!
   for (int i = 0; i < numberOfDoses; i++) {
     DoseTime* doseDate = &schedule[i];
 
@@ -376,7 +376,7 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
 
   // This section also removes any duplicates found.
   // Track the number of unique doses.
-  int uniqueDose = 0;
+  unsigned int uniqueDose = 0; // Can never be zero!
 
   for (int i = 1; i < numDoses; i++) {
     // If the current element is not a duplicate of the previous element
@@ -424,9 +424,9 @@ void printSchedule() {
   Serial.println(numDoses);
   Serial.println(F("-------------------------------------------------"));
 
-  for (uint8_t i = 0; i < numDoses; i++) {
-    int hour = doseSchedule[i].hour;
-    int minute = doseSchedule[i].minute;
+  for (unsigned int i = 0; i < numDoses; i++) {
+    unsigned int hour = doseSchedule[i].hour;
+    unsigned int minute = doseSchedule[i].minute;
 
     Serial.print(F("Dose "));
     Serial.print(i + 1);
