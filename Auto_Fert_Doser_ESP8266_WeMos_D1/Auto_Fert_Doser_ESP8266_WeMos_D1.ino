@@ -119,7 +119,11 @@ void setup() {
   Serial.begin(115200);  // For Serial Monitor
 
   initLCD();
-  initFS();
+
+  if (!initFS()) {
+    ESP.restart();
+  }
+
   initWiFi();
   initTime();
   initDoseSchedule();
@@ -137,11 +141,17 @@ void initLCD() {
   lcd.print("Setup...");
 }
 
-void initFS() {
+bool initFS() {
   if (!LittleFS.begin()) {
     Serial.println(F("Failed to mount LittleFS"));
-    return;
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Storage Error!");
+    delay(5000);
+    return false;
   }
+
+  return true;
 }
 
 void connectToWiFi() {
