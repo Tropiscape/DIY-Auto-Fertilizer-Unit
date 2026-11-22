@@ -533,7 +533,7 @@ void printDose(DoseTime dose) {
 //----------------------------------------------------------------------------------------------
 // LittleFS/Storage Operations
 
-bool validateFile(const File &f) {
+bool validateFile(const File& f) {
   if (!f) {
     Serial.println(F("Error opening LittleFS schedule file!"));
     return false;
