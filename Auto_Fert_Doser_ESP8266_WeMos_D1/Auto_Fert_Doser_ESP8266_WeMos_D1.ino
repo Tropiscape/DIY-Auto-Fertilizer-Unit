@@ -362,7 +362,7 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
   // This function also removes duplicates.
   // The main method is moving unique entries to the front of the array
   // Any duplicate entries are at the back and can easily be indexed out.
-  shellSortKnuth(schedule, numberOfDoses, compareDoseTime);
+  shellSortKnuth(schedule, numDoses, compareDoseTime);
 
   if (numDoses <= 0) {
     Serial.print("numDoses is <= 0!");
