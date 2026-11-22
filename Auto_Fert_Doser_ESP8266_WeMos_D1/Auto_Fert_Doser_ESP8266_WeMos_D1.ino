@@ -18,6 +18,8 @@ JsonDocument doc;
 const char* const months[12] PROGMEM = { "Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec" };
 const char* const weekdayNames[7] PROGMEM = { "Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat" };
 
+// Maximum amount of doses in the schedule. Can be increased if needed
+constexpr unsigned int MAX_DOSES = 64;
 enum Weekday : int { SUNDAY = 0,
                      MONDAY,
                      TUESDAY,
@@ -51,7 +53,7 @@ constexpr unsigned long DOSE_WINDOW = 300;  // How late a dose can fire. (in Sec
 constexpr float PUMP_CALIBRATION = 1.04;    // Pump calibration factor (for 1 mL/sec). Modify this when testing for accuracy against a certain length of time. The formula is (<x mL> / <total time tested in seconds>).
 constexpr float PUMP_OVERFLOW_VALUE = 0.9;  // Some pumps tend to overshoot dosage by 0.1 mL. This is a value to account for that. If you find that you are off by a different number, please change this!
 
-DoseTime doseSchedule[] = {
+DoseTime doseSchedule[MAX_DOSES] = {
   // Format: { Day, Hour (24hr Format), Minute }
   // Ex. {SATURDAY, 13, 0} = Saturday @ 1:00 pm or 13:00.
   // Min Hour = 0; Max Hour = 23 (Hour 24 == 0)
