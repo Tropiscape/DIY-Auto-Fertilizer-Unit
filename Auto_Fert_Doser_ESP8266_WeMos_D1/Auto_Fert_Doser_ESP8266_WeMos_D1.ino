@@ -248,14 +248,14 @@ void initTime() {
 void initDoseSchedule() {
   Serial.println(F("Loading schedule..."));
   const unsigned int scheduleSize = sizeof(doseSchedule) / sizeof(doseSchedule[0]);
-  
+
   if (loadSchedule()) {
     Serial.println(F("Loaded schedule from flash!"));
   } else if (scheduleSize >= 1) {
     // This should only be done once at startup.
     sortSchedule(doseSchedule, scheduleSize);
     initIndex(doseSchedule, scheduleSize);
-    
+
     if (saveSchedule()) {
       Serial.println(F("Created new schedule and stored in flash"));
     } else {
@@ -437,9 +437,9 @@ void printSchedule() {
 }
 
 // Obtain initial dose with respect to the current day. This is only ran once during setup.
-void initIndex(DoseTime* schedule, int size) {
+void initIndex(DoseTime* schedule, unsigned int size) {
 
-  if (size <= 0) {
+  if (size == 0) {
     Serial.println(F("initIndex() - Schedule needs to be larger than 0!"));
     return;
   }
@@ -468,9 +468,7 @@ void updateNextDose() {
   // Wrap around to the first scheduled dose if at the end of schedule list.
   if (currentDoseIndex + 1 >= numDoses) {
     currentDoseIndex = 0;
-    // nextDose = doseSchedule[currentDoseIndex];
   } else {
-    // nextDose = doseSchedule[currentDoseIndex + 1];
     currentDoseIndex++;
   }
 
