@@ -323,6 +323,7 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
   }
 
   if (numberOfDoses == 1) {
+    numDoses = 1;
     return;
   }
 
@@ -575,7 +576,7 @@ void loadDefaultSchedule() {
   memcpy(doseSchedule, defaultSchedule, sizeof(defaultSchedule));
 
   // This should always equal to 1. Size checking is in case default schedule is modified or somehow corrupted
-  numDoses = sizeof(doseSchedule) / sizeof(doseSchedule[0]);
+  numDoses = sizeof(defaultSchedule) / sizeof(defaultSchedule[0]);
 }
 
 bool loadSchedule() {
