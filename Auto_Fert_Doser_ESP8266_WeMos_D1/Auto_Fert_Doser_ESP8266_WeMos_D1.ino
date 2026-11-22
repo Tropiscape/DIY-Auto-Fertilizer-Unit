@@ -260,6 +260,11 @@ void initDoseSchedule() {
   const unsigned int scheduleSize = sizeof(doseSchedule) / sizeof(doseSchedule[0]);
 
   if (loadSchedule()) {
+    // Schedule should essentially already be sorted, but still sort just in case.
+    sortSchedule(doseSchedule, scheduleSize);
+    initIndex(doseSchedule, scheduleSize);
+
+    numDoses = scheduleSize;
     Serial.println(F("Loaded schedule from flash!"));
   } else if (scheduleSize >= 1) {
     // This should only be done once at startup.
