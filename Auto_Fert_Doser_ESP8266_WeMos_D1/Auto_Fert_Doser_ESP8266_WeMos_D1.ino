@@ -119,6 +119,7 @@ bool pumpActivated = false;
 void setup() {
   initPumpPins();
   Serial.begin(115200);  // For Serial Monitor
+  printPumpPinsConfig();
 
   initLCD();
 
@@ -210,7 +211,7 @@ const char* getSignalQuality(long strength) {
   }
   if (strength >= -50) {
     return "(Excellent)";
-  } 
+  }
   if (strength >= -60) {
     return "(Good)";
   }
@@ -231,7 +232,9 @@ void initPumpPins() {
   digitalWrite(PUMP_PIN, PUMP_IDLE_STATUS);
   pinMode(PUMP_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+}
 
+void printPumpPinsConfig() {
   Serial.print(F("\n"));
   Serial.println(F("================================================="));
   Serial.println(F("              INITIALIZING PUMP PINS             "));
