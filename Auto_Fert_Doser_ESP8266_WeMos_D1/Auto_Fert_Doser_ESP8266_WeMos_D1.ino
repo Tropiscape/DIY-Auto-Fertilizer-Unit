@@ -318,12 +318,7 @@ long doseTimeToSeconds(DoseTime doseTime) {
 void sortSchedule(DoseTime* schedule, int numberOfDoses) {
 
   if (numberOfDoses <= 0) {
-    Serial.print("sortSchedule() - size parameter needs to be greater than 0!");
-    return;
-  }
-
-  if (numberOfDoses == 1) {
-    numDoses = 1;
+    Serial.println("sortSchedule() - numberOfDoses parameter needs to be greater than 0!");
     return;
   }
 
@@ -343,6 +338,11 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
     }
   }
   numDoses = validCount;
+
+  // For handling single-dose schedules.
+  if (numDoses == 1) {
+    return;
+  }
 
   // This function also removes duplicates.
   // The main method is moving unique entries to the front of the array
@@ -369,11 +369,6 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
 
   // Modify the total number of doses to exclude duplicates.
   // '+1' is for counting the first dose as it will always be unique.
-  if (uniqueDose <= 0) {
-    Serial.println("No unique doses found!");
-    return;
-  }
-
   numDoses = uniqueDose + 1;
 }
 
@@ -486,7 +481,7 @@ void updateNextDose() {
 }
 
 void handleScheduledDose() {
-  if (pumpActivated) {
+  if (pumpActivated || numDoses == 0) {
     return;
   }
 
@@ -626,6 +621,12 @@ bool loadSchedule() {
       count++;
     }
   }
+
+  if (count == 0) {
+    Serial.println(F("loadSchedule() - no valid doses found in file"));
+    return false;
+  }
+
   numDoses = count;
   return true;
 }
