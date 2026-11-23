@@ -3,3 +3,5 @@ images/.directory
 Auto_Fert_Doser/.vscode/*
 Auto_Fert_Doser_ESP8266/.vscode/*
 Auto_Fert_Doser_ESP8266_WeMos_D1/.vscode/*
+Auto_Fert_Doser_ESP8266_WeMos_D1/build/
+Auto_Fert_Doser_ESP8266_WeMos_D1/.clangd
