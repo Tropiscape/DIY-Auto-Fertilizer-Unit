@@ -12,9 +12,8 @@
 
 using ace_sorting::shellSortKnuth;
 
-// Initialize LCD and RTC
+// Initialize LCD
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // Adjust I2C address to match yours
-JsonDocument doc;
 
 const char* const months[12] PROGMEM = { "Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec" };
 const char* const weekdayNames[7] PROGMEM = { "Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat" };
@@ -167,8 +166,8 @@ void connectToWiFi() {
   lcd.setCursor(0, 0);
   lcd.print("Connecting WiFi");
 
-  WiFi.mode(WIFI_STA);  // Station Mode Only. Prevents the doser from acting like an access point.
-  WiFi.setOutputPower(wiFiPower); // using 15 dBm for lower power consumption.
+  WiFi.mode(WIFI_STA);             // Station Mode Only. Prevents the doser from acting like an access point.
+  WiFi.setOutputPower(wiFiPower);  // using 15 dBm for lower power consumption.
   WiFi.begin(ssid, password);
 
   unsigned long start = millis();
@@ -294,7 +293,6 @@ void initDoseSchedule() {
   //* initIndex() already recalculates the correct index from the clock on every boot.
 
   initIndex(doseSchedule, numDoses);
-  // storeCurrentDoseIndex(currentDoseIndex);
   Serial.println(F("================================================="));
   Serial.println(F("Next Dose:"));
   printDose(doseSchedule[currentDoseIndex]);
@@ -667,50 +665,6 @@ bool loadSchedule() {
   numDoses = count;
   return true;
 }
-
-void storeCurrentDoseIndex(int index) {
-  File file = LittleFS.open(currentIndexFile, "w");
-
-  // Set values in JSON Doc with the next dose.
-  doc["currentDoseIndex"] = index;
-
-  serializeJson(doc, file);
-  file.close();
-}
-
-void loadCurrentDoseIndex() {
-  // Avoid empty schedules
-  if (numDoses == 0) {
-    Serial.print(F("Number of Doses cannot be zero!"));
-
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("ERROR!");
-    lcd.setCursor(0, 1);
-    lcd.print("EMPTY SCHEDULE");
-
-    // More of a defensive thing to prevent the pump from running inaccurate entries
-    delay(5000);
-    ESP.restart();
-  }
-
-  File file = LittleFS.open(currentIndexFile, "r");
-
-  // Default to the very first dose as a failsafe
-  if (!file) {
-    currentDoseIndex = 0;
-    return;
-  }
-
-  deserializeJson(doc, file);
-  currentDoseIndex = doc["currentDoseIndex"];
-
-  Serial.println(F("Loaded Current Dose Index:"));
-  Serial.println(currentDoseIndex);
-  Serial.println(F("=================================================\n"));
-  file.close();
-}
-
 
 //----------------------------------------------------------------------------------------------
 // Time Operations
