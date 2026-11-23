@@ -111,6 +111,7 @@ unsigned long lastNTPUpdate = 0;
 unsigned long pumpStartTime = 0;
 unsigned int numDoses = 0;  // The number of doses based on the schedule.
 unsigned int currentDoseIndex = 0;
+uint32_t currentScheduleHash = 0;
 int lastButtonState = HIGH;
 int buttonState = HIGH;
 bool pumpActivated = false;
@@ -265,36 +266,39 @@ void initDoseSchedule() {
   Serial.println(F("Loading schedule..."));
   const unsigned int scheduleSize = sizeof(doseSchedule) / sizeof(doseSchedule[0]);
 
+  // sortSchedule() will also update numDoses
+  sortSchedule(doseSchedule, scheduleSize);
+  currentScheduleHash = createHash(doseSchedule, numDoses);
+
+  if (numDoses == 0) {
+    loadDefaultSchedule();
+    Serial.println(F("Loaded default schedule"));
+    return;
+  }
+
   if (loadSchedule()) {
     // Schedule should essentially already be sorted, but still sort just in case.
-    sortSchedule(doseSchedule, scheduleSize);
-    initIndex(doseSchedule, scheduleSize);
-
-    numDoses = scheduleSize;
+    sortSchedule(doseSchedule, numDoses);
     Serial.println(F("Loaded schedule from flash!"));
-  } else if (scheduleSize >= 1) {
-    // This should only be done once at startup.
-    sortSchedule(doseSchedule, scheduleSize);
-    initIndex(doseSchedule, scheduleSize);
-
+  } else {
+    // Corrupted file, no file, or schedule has changed
     if (saveSchedule()) {
       Serial.println(F("Created new schedule and stored in flash"));
     } else {
       Serial.println(F("Created new schedule, but saving failed!"));
     }
-
-  } else {
-    // Failsafe
-    loadDefaultSchedule();
-    initIndex(doseSchedule, 1);
-    Serial.println(F("Loaded default schedule"));
   }
 
   printSchedule();
-  storeCurrentDoseIndex(currentDoseIndex);
+  // TODO: Remove. The stored index is never read, goes stale after every dose, and costs a flash write per boot.
+  //* initIndex() already recalculates the correct index from the clock on every boot.
+
+  initIndex(doseSchedule, numDoses);
+  // storeCurrentDoseIndex(currentDoseIndex);
   Serial.println(F("================================================="));
   Serial.println(F("Next Dose:"));
   printDose(doseSchedule[currentDoseIndex]);
+  
 }
 
 //----------------------------------------------------------------------------------------------
@@ -568,6 +572,9 @@ bool saveSchedule() {
     return false;
   }
 
+  currentScheduleHash = createHash(doseSchedule, numDoses);
+  doc["crc"] = currentScheduleHash;
+
   size_t bytesWritten = serializeJson(doc, temp);
   temp.close();
 
@@ -586,6 +593,10 @@ bool saveSchedule() {
   return true;
 }
 
+uint32_t createHash(DoseTime* schedule, unsigned int doseCount) {
+  return crc32(schedule, doseCount * sizeof(schedule[0]));
+}
+
 void loadDefaultSchedule() {
   memcpy(doseSchedule, defaultSchedule, sizeof(defaultSchedule));
 
@@ -596,7 +607,7 @@ void loadDefaultSchedule() {
 bool loadSchedule() {
   // Loads the full schedule. This is only ran once during startup.
   // Returns true on load success, otherwise false.
-
+  
   File file = LittleFS.open(scheduleFile, "r");
 
   if (!validateFile(file)) {
@@ -616,6 +627,13 @@ bool loadSchedule() {
   JsonArray schedule = doc["doses"].as<JsonArray>();
   if (!schedule) {
     Serial.println(F("/schedule.json: 'doses' is missing or not an array. Assigning defaults"));
+    return false;
+  }
+
+  // Check for any schedule modifications
+  uint32_t savedHash = doc["crc"].as<uint32_t>();
+  if (currentScheduleHash != savedHash) {
+    Serial.println("loadSchedule() - compiled schedule has changed! Schedule needs to be rebuilt...");
     return false;
   }
 
