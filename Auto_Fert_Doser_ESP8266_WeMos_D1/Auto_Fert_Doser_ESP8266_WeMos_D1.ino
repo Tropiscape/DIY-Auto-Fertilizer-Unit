@@ -336,7 +336,10 @@ long doseTimeToSeconds(DoseTime doseTime) {
          + doseTime.minute * SECONDS_PER_MINUTE;
 }
 
-void sortSchedule(DoseTime* schedule, int numberOfDoses) {
+void sortSchedule(DoseTime* schedule, unsigned int numberOfDoses) {
+  // This function also removes duplicates.
+  // The main method is moving unique entries to the front of the array
+  // Any duplicate entries are at the back and can easily be indexed out.
 
   if (numberOfDoses <= 0) {
     Serial.println("sortSchedule() - numberOfDoses parameter needs to be greater than 0!");
@@ -344,7 +347,7 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
   }
 
   // Remove invalid entries first
-  unsigned int validCount = 0; // Can never be zero!
+  unsigned int validCount = 0;  // Can never be zero!
   for (int i = 0; i < numberOfDoses; i++) {
     DoseTime* doseDate = &schedule[i];
 
@@ -365,9 +368,6 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
     return;
   }
 
-  // This function also removes duplicates.
-  // The main method is moving unique entries to the front of the array
-  // Any duplicate entries are at the back and can easily be indexed out.
   shellSortKnuth(schedule, numDoses, compareDoseTime);
 
   if (numDoses <= 0) {
@@ -377,7 +377,7 @@ void sortSchedule(DoseTime* schedule, int numberOfDoses) {
 
   // This section also removes any duplicates found.
   // Track the number of unique doses.
-  unsigned int uniqueDose = 0; // Can never be zero!
+  unsigned int uniqueDose = 0;  // Can never be zero!
 
   for (int i = 1; i < numDoses; i++) {
     // If the current element is not a duplicate of the previous element
