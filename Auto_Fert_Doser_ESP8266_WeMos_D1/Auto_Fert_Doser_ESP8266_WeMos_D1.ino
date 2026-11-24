@@ -89,7 +89,8 @@ constexpr unsigned long SECONDS_PER_HOUR = 3600;
 constexpr unsigned long SECONDS_PER_DAY = 86400;
 constexpr unsigned long SECONDS_PER_WEEK = 604800;
 constexpr unsigned long WIFI_TIMEOUT = 30000;
-constexpr time_t MIN_VALID_EPOCH = 946684800;  // Jan 1, 2000 UTC => for NTP syncs in setup
+constexpr unsigned long PUMP_MESSAGE_DURATION = 2000;  // Time to display message after successful pump
+constexpr time_t MIN_VALID_EPOCH = 946684800;          // Jan 1, 2000 UTC => for NTP syncs in setup
 
 constexpr char scheduleFile[] = "/schedule.json";
 constexpr char tempFile[] = "/schedule.tmp";
@@ -108,7 +109,7 @@ unsigned long lastDebounceTime = 0;
 unsigned long lastDisplayUpdate = 0;
 unsigned long lastNTPUpdate = 0;
 unsigned long pumpStartTime = 0;
-unsigned int numDoses = 0;  // The number of doses based on the schedule.
+unsigned int numDoses = 0;
 unsigned int currentDoseIndex = 0;
 uint32_t currentScheduleHash = 0;
 int lastButtonState = HIGH;
@@ -296,7 +297,6 @@ void initDoseSchedule() {
   Serial.println(F("================================================="));
   Serial.println(F("Next Dose:"));
   printDose(doseSchedule[currentDoseIndex]);
-  
 }
 
 //----------------------------------------------------------------------------------------------
@@ -605,7 +605,7 @@ void loadDefaultSchedule() {
 bool loadSchedule() {
   // Loads the full schedule. This is only ran once during startup.
   // Returns true on load success, otherwise false.
-  
+
   File file = LittleFS.open(scheduleFile, "r");
 
   if (!validateFile(file)) {
@@ -780,7 +780,9 @@ void stopPump(const char* reason) {
 
   pumpActivated = false;
 
-  delay(2000);  // Display the completion message for 2 seconds
+  // Use delay() to also block button presses
+  // DOSE_WINDOW is the current workaround if a dose is schedules during the delay
+  delay(PUMP_MESSAGE_DURATION);
   updateDisplay();
 }
 
