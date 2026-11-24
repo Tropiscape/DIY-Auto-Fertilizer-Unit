@@ -115,6 +115,7 @@ uint32_t currentScheduleHash = 0;
 int lastButtonState = HIGH;
 int buttonState = HIGH;
 bool pumpActivated = false;
+bool doseFiredInWindow = false;
 
 // -----------------------------------------------------------------------------------
 
@@ -508,10 +509,18 @@ void handleScheduledDose() {
 
   long timeDiff = ((timeToSeconds(getLocalTime()) - doseTimeToSeconds(doseSchedule[currentDoseIndex])) + SECONDS_PER_WEEK) % SECONDS_PER_WEEK;
 
-  if (timeDiff <= DOSE_WINDOW) {
-    runPump("Scheduled Dose!");
-    updateNextDose();
+  if (timeDiff > DOSE_WINDOW) {
+    doseFiredInWindow = false;  // Reset since we are outside the window now
+    return;
   }
+
+  if (doseFiredInWindow) {
+    return;  // Skip if the dose has already ran within the dose window
+  }
+
+  doseFiredInWindow = true;
+  runPump("Scheduled Dose!");
+  updateNextDose();
 }
 
 void printDose(DoseTime dose) {
